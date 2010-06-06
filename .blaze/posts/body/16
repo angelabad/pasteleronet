@@ -1,34 +1,74 @@
-<p>Lo que se pretende con este documento es mostrar como gestionar nuestro directorio de configuraciones /etc (o cualquier otro directorio) sobre un repositorio Git, de esta forma siempre podremos deshacer los cambios o ver que cambios se han hecho con un simple vistazo al log del repositorio Git.</p>
-<p><!--break--></p>
-<p>En un primer momento probamos y descartamos Subversion por su estructura de directorios. Después estudiamos y probamos Svk, funcionaba sobre Subversion pero tenía la ventaja de que todo se guardaba bajo /root/.svk  y con permisos restrictivos. La solución no era mala, pero Svk son una serie librerías que funcionan sobre Subversion para convertirlo en un sistema VCS distribuido, con lo cual se añade una capa más al sistema y un punto más en el podría fallar.</p>
-<p>Después de investigar varios sistemas, Git nos pareció la mejor opcion, es distribuido, se guarda todo el repositorio bajo /etc/.git y se le pueden aplicar permisos restrictivos. Además por la arquitectura de Git es posible que también se puedan centralizar esos repositorios en un repositorio común, con firmas gpg y encriptación en la transferencia de datos, aunque de momento es algo que no hemos probado y lo dejaremos para otro ocasión.</p>
-<p>Para mantener /etc bajo un repositorio lo primero que necesitamos es instalar git-core</p>
+
+<p>
+Lo que se pretende con este documento es mostrar como gestionar
+nuestro directorio de configuraciones /etc (o cualquier otro
+directorio) sobre un repositorio Git, de esta forma siempre podremos
+deshacer los cambios o ver que cambios se han hecho con un simple
+vistazo al log del repositorio Git.
+</p>
+
+<!--break-->
+
+<p>
+En un primer momento probamos y descartamos Subversion por su
+estructura de directorios. Después estudiamos y probamos Svk,
+funcionaba sobre Subversion pero tenía la ventaja de que todo se
+guardaba bajo /root/.svk  y con permisos restrictivos. La solución no
+era mala, pero Svk son una serie librerías que funcionan sobre
+Subversion para convertirlo en un sistema VCS distribuido, con lo cual
+se añade una capa más al sistema y un punto más en el podría
+fallar.
+</p>
+
+<p>
+Después de investigar varios sistemas, Git nos pareció la mejor
+opcion, es distribuido, se guarda todo el repositorio bajo /etc/.git y
+se le pueden aplicar permisos restrictivos. Además por la arquitectura
+de Git es posible que también se puedan centralizar esos repositorios
+en un repositorio común, con firmas gpg y encriptación en la
+transferencia de datos, aunque de momento es algo que no hemos probado
+y lo dejaremos para otro ocasión.
+</p>
+
+<p>
+Para mantener /etc bajo un repositorio lo primero que necesitamos es
+instalar git-core
+</p>
 
 <pre>
 # apt-get install git-core
 </pre>
 
-<p>Creamos el repositorio git en /etc:</p>
+<p>
+Creamos el repositorio git en /etc:
+</p>
 
 <pre>
 # cd /etc
 # git init
 </pre>
 
-<p>Añadimos todo el directorio /etc al nuevo repositorio:</p>
+<p>
+Añadimos todo el directorio /etc al nuevo repositorio:
+</p>
 
 <pre>
 # git add .
 # git commit -a -m "Primer import de etc"
 </pre>
 
-<p>Restringimos lo permisos del directorio .git<br />
+<p>
+Restringimos lo permisos del directorio .git
+</p>
 
 <pre>
 # chmod og-rwx .git
 </pre>
 
-<p>Creamos un fichero .gitignore en /etc para que git ignore ciertos ficheros, con el siguiente contenido:</p>
+<p>
+Creamos un fichero .gitignore en /etc para que git ignore ciertos
+ficheros, con el siguiente contenido:
+</p>
 
 <pre>
 *~
@@ -40,9 +80,25 @@ adjtime
 ld.so.cache
 </pre>
 
-<p>Ahora debemos tener en cuenta que casi siempre que instalemos, eliminemos o actualicemos paquetes; el directorio  /etc sufrirá modificaciones, asi que vamos a añadir un pequeño script que actualice el repositorio cuando invoquemos a apt.</p>
-<p>Deberíamos buscar la forma de que apt se niege a ejecutarse si el repositorio no está actualizado, ya que si no al ejecutar apt también nos hará commit de las modificaciones anteriores que no están relacionadas con los paquetes. Si algun@ de los lector@s se anima a hacerlo, por favor que lo publique en los comentarios.</p>
-<p>Creamos el script para que apt actualize el repo en /etc/apt/git-apt y le damos permisos de ejecución.</p>
+<p>
+Ahora debemos tener en cuenta que casi siempre que instalemos,
+eliminemos o actualicemos paquetes; el directorio  /etc sufrirá
+modificaciones, asi que vamos a añadir un pequeño script que actualice
+el repositorio cuando invoquemos a apt.
+</p>
+
+<p>
+Deberíamos buscar la forma de que apt se niege a ejecutarse si el
+repositorio no está actualizado, ya que si no al ejecutar apt también
+nos hará commit de las modificaciones anteriores que no están
+relacionadas con los paquetes. Si algun@ de los lector@s se anima a
+hacerlo, por favor que lo publique en los comentarios.
+</p>
+
+<p>
+Creamos el script para que apt actualize el repo en /etc/apt/git-apt y
+le damos permisos de ejecución.
+</p>
 
 
 <pre>
@@ -55,13 +111,21 @@ git commit -a -m"Apt changes in $MYDATE" | tee -a /var/log/etc_git.log
 popd
 </pre>
 
-<p>Tener cuidado aqui, la linea que comienza con git commit y la siguiente /etc_git.log es sólo una línea, pero por la anchura del blog se corta, así que en vuestra configuración ponedlo todo en una línea, sino, no funcionará bien.</p>
+<p>
+Tener cuidado aqui, la linea que comienza con git commit y la
+siguiente /etc_git.log es sólo una línea, pero por la anchura del blog
+se corta, así que en vuestra configuración ponedlo todo en una línea,
+sino, no funcionará bien.
+</p>
 
 <pre>
 # chmod +x /etc/apt/git-apt
 </pre>
 
-<p>Ahora le decimos a apt que después de ejecutarse llame al script en el fichero /etc/apt.conf.d/30_git, que tendremos que crear.</p>
+<p>
+Ahora le decimos a apt que después de ejecutarse llame al script en el
+fichero /etc/apt.conf.d/30_git, que tendremos que crear.
+</p>
 
 <pre>
 DPkg {
@@ -69,8 +133,16 @@ DPkg {
 }
 </pre>
 
-<p>Esto sólo se ejecutará cuando usemos apt, no se ejecutará si usamos dpkg u otra herramienta. Así que en caso de instalar paquetes con gdebi o dpkg directamente tendremos que actualizar el repositorio Git a mano.</p>
-<p>Ya sólo falta añadir los nuevos fichero a nuestro repositorio</p>
+<p>
+Esto sólo se ejecutará cuando usemos apt, no se ejecutará si usamos
+dpkg u otra herramienta. Así que en caso de instalar paquetes con
+gdebi o dpkg directamente tendremos que actualizar el repositorio Git
+a mano.
+</p>
+
+<p>
+Ya sólo falta añadir los nuevos fichero a nuestro repositorio
+</p>
 
 <pre>
 # git add .gitignore apt/apt.conf apt/git-apt
@@ -80,9 +152,36 @@ DPkg {
 # git commit -m "Ficheros para el control de /etc"
 </pre>
 
-<p>A partir de este momento ya tenemos el directorio /etc sobre Git.</p>
-<p>Si alguna ventaja tiene git sobre otros sitemas de VCS es la gestión de branches, podemos aprovechar esta característica para experimentar sin miendo. Podemos crearnos nuestro branch de /etc, probar, experimentar y si todo funciona bien, podemos hacer un merge, si no funciona, volvemos al branch master y como si no hubiera pasado nada. Además nos deja una bitácora de todo lo que se ha ido tocando en las configuraciones de los servidores, que incluso podríamos exportar por rss o lo que se nos ocurra para tener a golpe de vista los cambios en las configuraciones de nuestro servidor.</p>
-<p>Estaría bien que programasemos un pequeño script para que en el caso de que hagamos logout de la máquina y el repositorio git no esté actualizado no nos deje deslogearnos o nos dé un mensaje de aviso, esto también se lo dejamos al lector@.</p>
+<p>
+A partir de este momento ya tenemos el directorio /etc sobre Git.
+</p>
+
+<p>
+Si alguna ventaja tiene git sobre otros sitemas de VCS es la gestión
+de branches, podemos aprovechar esta característica para experimentar
+sin miendo. Podemos crearnos nuestro branch de /etc, probar,
+experimentar y si todo funciona bien, podemos hacer un merge, si no
+funciona, volvemos al branch master y como si no hubiera pasado
+nada. Además nos deja una bitácora de todo lo que se ha ido tocando en
+las configuraciones de los servidores, que incluso podríamos exportar
+por rss o lo que se nos ocurra para tener a golpe de vista los cambios
+en las configuraciones de nuestro servidor.
+</p>
+
+<p>
+Estaría bien que programasemos un pequeño script para que en el caso
+de que hagamos logout de la máquina y el repositorio git no esté
+actualizado no nos deje deslogearnos o nos dé un mensaje de aviso,
+esto también se lo dejamos al lector@.
+</p>
+
+<p>
+<strong>Nota: </strong>Para los que prefieran un control menos exaustivo pero más
+automatizado, existe <a
+href="http://kitenet.net/~joey/code/etckeeper/">etckeeper</a>, a mi
+personalmente no me gusta mucho su forma de funcionar, pero si que he
+leido comentarios de usuarios muy contentos con este software.
+
 <h4>Enlaces</h4>
 <ul>
 <li><a href="http://www.git-scm.org">Git</a></li>

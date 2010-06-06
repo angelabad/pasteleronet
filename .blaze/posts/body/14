@@ -1,27 +1,75 @@
-Artículo traducido de: <a href="http://www.debian-administration.org/articles/590">http://www.debian-administration.org/articles/590</a>
 
-A partir de la nueva versión de OpenSSh, la 4.8p1 para el port GNU/Linux, disponemos de una nueva opción de configuración: <em>ChrootDirectory</em>. Esto ha sido posible gracias al nuevo subsistema SFTP linkado estaticamente con sshd.
+<p>
+Artículo traducido de: <a
+href="http://www.debian-administration.org/articles/590">http://www.debian-administration.org/articles/590</a>
+</p>
 
-Esto hace posible reemplazar facilmente el servicio FTP básico sin el problema de tener que configurar la encriptación y/o la preocupación del modo activo y pasivo del FTP cuando se trabaja detrás de un router NAT. Es mucho más simple que paquetes como <a href="http://packages.debian.org/rssh">rssh</a>, <a href="http://packages.debian.org/scponly">scponly</a> o <a href="http://chrootssh.sourceforge.net/index.php">otros parches</a> ya que no requiere instalación ni mantenimiento (p.e actualizaciones de seguridad) del entorno chroot.
+<p>
+A partir de la nueva versión de OpenSSh, la 4.8p1 para el port
+GNU/Linux, disponemos de una nueva opción de configuración:
+<em>ChrootDirectory</em>. Esto ha sido posible gracias al nuevo
+subsistema SFTP linkado estaticamente con sshd.
+</p>
+
+<p>
+Esto hace posible reemplazar facilmente el servicio FTP básico sin el
+problema de tener que configurar la encriptación y/o la preocupación
+del modo activo y pasivo del FTP cuando se trabaja detrás de un router
+NAT. Es mucho más simple que paquetes como <a
+href="http://packages.debian.org/rssh">rssh</a>, <a
+href="http://packages.debian.org/scponly">scponly</a> o <a
+href="http://chrootssh.sourceforge.net/index.php">otros parches</a> ya
+que no requiere instalación ni mantenimiento (p.e actualizaciones de
+seguridad) del entorno chroot.
+</p>
 
 <!--break-->
 
-Para habilitarlo obviamente necesitamos la version 4.8p1 o superior. Yo personalmente uso la versión del cvs y el directorio debian/ del paquete de sid para construir un paquete Debian 4.8p1~cvs-1.
+<p>
+Para habilitarlo obviamente necesitamos la version 4.8p1 o
+superior. Yo personalmente uso la versión del cvs y el directorio
+debian/ del paquete de sid para construir un paquete Debian
+4.8p1~cvs-1.
+</p>
 
+<p>
 En <em><tt>/etc/ssh/sshd_config</tt></em> :
-<pre>Subsystem sftp internal-sftp</pre>
+</p>
+
+<pre>
+Subsystem sftp internal-sftp
+</pre>
+
+<p>
 Ahora configuramos una regla de chroot:
-<pre>Match group sftponly
+</p>
+
+<pre>
+Match group sftponly
            ChrootDirectory /home/%u
            X11Forwarding no
            AllowTcpForwarding no
-           ForceCommand internal-sftp</pre>
-El directorio chroot debe pertenecer al usuario root. Después de la llamada a chroot(), sshd cambia el directorio a la home relativa al nuevo directorio raiz. Esto es por lo que uso / como directorio home.
-<pre># chown root.root /home/user
+           ForceCommand internal-sftp
+</pre>
+
+<p>
+El directorio chroot debe pertenecer al usuario root. Después de la
+llamada a chroot(), sshd cambia el directorio a la home relativa al
+nuevo directorio raiz. Esto es por lo que uso / como directorio home.
+</p>
+
+<pre>
+# chown root.root /home/user
 # usermod -d / user
-# adduser user sftponly</pre>
+# adduser user sftponly
+</pre>
+
+<p>
 Y se comporta como esperabamos:
-<pre>$ sftp user@host
+</p>
+
+<pre>
+$ sftp user@host
 Connecting to host...
 user@host's password:
 sftp&gt; ls
@@ -30,10 +78,19 @@ sftp&gt; pwd
 Remote working directory: /
 sftp&gt; cd ..
 sftp&gt; ls
-build               cowbuildinall       incoming            johnbuilderclean</pre>
-La única cosa que echo de menos es el logeo de transferencias, pero todavía no he investigado sobre ello. Escribiré mas sobre esto cuando encuentre tiempo para ello.
+build               cowbuildinall       incoming            johnbuilderclean
+</pre>
 
+<p>
+La única cosa que echo de menos es el logeo de transferencias, pero
+todavía no he investigado sobre ello. Escribiré mas sobre esto cuando
+encuentre tiempo para ello.
+</p>
+
+<p>
 Enlaces:
+</p>
+
 <ul>
 	<li><a rel="nofollow" href="http://linuxfr.org/2008/02/22/23744.html">Another step towards increasing SFTP popularity (fr)</a></li>
 	<li><a rel="nofollow" href="http://undeadly.org/cgi?action=article&amp;sid=20080220110039">Chroot in OpenSSH</a></li>

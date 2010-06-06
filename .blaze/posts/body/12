@@ -1,17 +1,51 @@
-Artículo traducido de <a href="http://www.debian-administration.org/articles/423">http://www.debian-administration.org/articles/423</a>
-Artículo original: <a href="http://www.virtualconcepts.nl/xenbackports.php" rel="nofollow">http://www.virtualconcepts.nl/xenbackports.php</a>
 
-Existe un buen howto que explica como instalar Xen en Debian Inestable. Es realmente fácil de hacer y funciona perfectamente. Aunque en servidores en producción esta no es precisamente la opción más indicada. Debian Inestable sufre demasiadas actualizaciones y las cosas cambian muy a menudo. En una máquina en producción un host Xen deberia ser estable, seguro y no requerir mucha atención. Este es el momento en el que aparece Sarge. Si coges paquetes de backports y los instalas en Debian Estable obtendrás lo mejor de cada mundo. Vamos a verlo!
+<p>
+Artículo traducido de <a
+href="http://www.debian-administration.org/articles/423">http://www.debian-administration.org/articles/423</a>
+</p>
+
+<p>
+Artículo original: <a
+href="http://www.virtualconcepts.nl/xenbackports.php"
+rel="nofollow">http://www.virtualconcepts.nl/xenbackports.php</a>
+</p>
+
+<p>
+Existe un buen howto que explica como instalar Xen en Debian
+Inestable. Es realmente fácil de hacer y funciona
+perfectamente. Aunque en servidores en producción esta no es
+precisamente la opción más indicada. Debian Inestable sufre demasiadas
+actualizaciones y las cosas cambian muy a menudo. En una máquina en
+producción un host Xen deberia ser estable, seguro y no requerir mucha
+atención. Este es el momento en el que aparece Sarge. Si coges
+paquetes de backports y los instalas en Debian Estable obtendrás lo
+mejor de cada mundo. Vamos a verlo!
+</p>
 
 <!--break-->
 
-Antes de empezar con este howto, necesitas instalar Sarge en tu hardware de la manera que prefieras. Yo he usado un Sun Fire X2100 con 4Gb de ram y 2 discos SATA configurados en raid1 por software.
+<p>
+Antes de empezar con este howto, necesitas instalar Sarge en tu
+hardware de la manera que prefieras. Yo he usado un Sun Fire X2100 con
+4Gb de ram y 2 discos SATA configurados en raid1 por software.
+</p>
 
-Añade los backports a las fuentes de tu apt y establece las preferencias.
-<pre># vi /etc/apt/sources.list
-deb http://www.backports.org/debian/ sarge-backports main</pre>
+<p>
+Añade los backports a las fuentes de tu apt y establece las
+preferencias.
+</p>
+
+<pre>
+# vi /etc/apt/sources.list
+deb http://www.backports.org/debian/ sarge-backports main
+</pre>
+
+<p>
 Si /etc/apt/preferences no existe, crealo.
-<pre># vi /etc/apt/preferences
+</p>
+
+<pre>
+# vi /etc/apt/preferences
 Package: *
 Pin: release a=sarge-backports
 Pin-Priority: 200
@@ -42,51 +76,153 @@ Pin-Priority: 999
 
 Package: grub
 Pin: release a=sarge-backports
-Pin-Priority: 999</pre>
-Ahora actualiza tus fuentes
-<pre>apt-get update &amp;&amp; apt-get dist-upgrade</pre>
-Si todo ha ido bien, ya estás preparado para empezar a instalar paquetes. Si no tienes mas información sobre los backports en su sitio web: <a href="http://www.backports.org">http://www.backports.org</a>
+Pin-Priority: 999
+</pre>
 
-Ya que hay ciertos problemas de dependencias con grub y mdadm, los instalaremos junto con otros paquetes desde backports.
-<pre># apt-get install grub/sarge-backports
+<p>
+Ahora actualiza tus fuentes
+</p>
+
+<pre>
+apt-get update &amp;&amp; apt-get dist-upgrade
+</pre>
+
+<p>
+Si todo ha ido bien, ya estás preparado para empezar a instalar
+paquetes. Si no tienes mas información sobre los backports en su sitio
+web: <a href="http://www.backports.org">http://www.backports.org</a>
+</p>
+
+<p>
+Ya que hay ciertos problemas de dependencias con grub y mdadm, los
+instalaremos junto con otros paquetes desde backports.
+</p>
+
+<pre>
+# apt-get install grub/sarge-backports
 # apt-get install makedev/sarge-backports
 # apt-get install lsb-base/sarge-backports
-# apt-get install mdadm/sarge-backports</pre>
+# apt-get install mdadm/sarge-backports
+</pre>
+
+<p>
 Los siguientes paquetes a instalar son xen-hypervisor y xen-utils.
-<pre># apt-get install xen-hypervisor-3.0-i386 xen-utils-3.0</pre>
-Instala el kernel adecuado. Un 686 para máquinas P4 y Xeon y K7 para máquinas Athlon y Opteron.
-<pre># apt-get install linux-image-2.6.16-2-xen-686</pre>
+</p>
+
+<pre>
+# apt-get install xen-hypervisor-3.0-i386 xen-utils-3.0
+</pre>
+
+<p>
+Instala el kernel adecuado. Un 686 para máquinas P4 y Xeon y K7 para
+máquinas Athlon y Opteron.
+</p>
+
+<pre>
+# apt-get install linux-image-2.6.16-2-xen-686
+</pre>
+
+<p>
 Elimina hotplug, ya que vamos a cambiar a udev!
-<pre># dpkg --purge hotplug
+</p>
+
+<pre>
+# dpkg --purge hotplug
 # apt-get install bridge-utils xen-tools/sarge-backports sysfsutils
-# mv /lib/tls/ /lib/tls.disabled</pre>
+# mv /lib/tls/ /lib/tls.disabled
+</pre>
+
+<p>
 Necesitas un nuevo initrd. Mkinitramfs hará esta tarea por tí.
-<pre># cd /boot
-# mkinitramfs -o /boot/initrd.img-2.6.16-2-xen-686 2.6.16-2-xen-686</pre>
-Ahora necesitamos configurar nuestro cargador de arranque para que utilice nuestro nuevo kernel Xen. Añade algo como esto en tu archivo /boot/grub/menu.lst
-<pre># vi /boot/grub/menu.lst
+</p>
+
+<pre>
+# cd /boot
+# mkinitramfs -o /boot/initrd.img-2.6.16-2-xen-686 2.6.16-2-xen-686
+</pre>
+
+<p>
+Ahora necesitamos configurar nuestro cargador de arranque para que
+utilice nuestro nuevo kernel Xen. Añade algo como esto en tu archivo
+/boot/grub/menu.lst 
+</p>
+
+<pre>
+# vi /boot/grub/menu.lst
 title Xen 3.0 / XenLinux 2.6-686
 kernel /boot/xen-3.0-i386.gz
 module /boot/vmlinuz-2.6.16-2-xen-686 root=/dev/md0 ro
-module /boot/initrd.img-2.6.16-2-xen-686</pre>
+module /boot/initrd.img-2.6.16-2-xen-686
+</pre>
+
+<p>
 O con k7 si tienes una máquina Athlon u Opteron.
-<pre>title Xen 3.0 / XenLinux 2.6-k7
+</p>
+
+<pre>
+title Xen 3.0 / XenLinux 2.6-k7
 kernel /boot/xen-3.0-i386.gz
 module /boot/vmlinuz-2.6.16-2-xen-k7 root=/dev/md0 ro
-module /boot/initrd.img-2.6.16-2-xen-k7</pre>
-El demonio xen necesita algunos ajustes. abre el fichero de configuración y asegurate de habilitar (network-script network-bridge) (linea 73), (vif-script vif-bridge) (linea 104).
-<pre># vi /etc/xen/xend-config.sxp</pre>
-Reinicia el demonio xen y comprueba que acepta las nuevas configuraciones.
-<pre># invoke-rc.d xend restart
-# reboot</pre>
-En la mayoría de los casos el bridge funcionará después de reiniciar, pero es fácil comprobarlo. Peth0 y vif0.0 deben estar en la lista de interfaces. Peth0 es el dispositivo físico de red.
-<pre># brctl show</pre>
-Ya estás preparado para configurar y arrancar tus xens! La puesta en marcha de las máquinas xen está ampliamente explicada en la red. Posiblemente la forma más fácil es usando las xen-tools creadas por steve. Aunque es extremadamente sencillo, hay documentación sobre como usarlo al final del siguiente artículo: <a href="http://www.debian-administration.org/articles/396">http://www.debian-administration.org/articles/396</a>
+module /boot/initrd.img-2.6.16-2-xen-k7
+</pre>
 
-Hay ciertas cosas a las que debes prestar atención cuando configures tus xens. Lo primero es copiar los módulos al xen guest. Por ejemplo, montando tu primer xen en /mnt/xen1 y copiando los módulos:
-<pre># cp -a /lib/modules/2.6.16-2-xen-k7/ /mnt/xen1/lib/modules/</pre>
-Lo segundo es el archivo de configuración. La opción ramdisk está desactivada por defecto, pero es obligatoria para iniciar xen! Por ejemplo:
-<pre># vi /etc/xen/xen1.cfg
+<p>
+El demonio xen necesita algunos ajustes. abre el fichero de
+configuración y asegurate de habilitar (network-script network-bridge)
+(linea 73), (vif-script vif-bridge) (linea 104).
+</p>
+
+<pre>
+# vi /etc/xen/xend-config.sxp
+</pre>
+
+<p>
+Reinicia el demonio xen y comprueba que acepta las nuevas
+configuraciones.
+</p>
+
+<pre>
+# invoke-rc.d xend restart
+# reboot
+</pre>
+
+<p>
+En la mayoría de los casos el bridge funcionará después de reiniciar,
+pero es fácil comprobarlo. Peth0 y vif0.0 deben estar en la lista de
+interfaces. Peth0 es el dispositivo físico de red.
+</p>
+
+<pre>
+# brctl show
+</pre>
+
+<p>
+Ya estás preparado para configurar y arrancar tus xens! La puesta en
+marcha de las máquinas xen está ampliamente explicada en la
+red. Posiblemente la forma más fácil es usando las xen-tools creadas
+por steve. Aunque es extremadamente sencillo, hay documentación sobre
+como usarlo al final del siguiente artículo: <a
+href="http://www.debian-administration.org/articles/396">http://www.debian-administration.org/articles/396</a>
+</p>
+
+<p>
+Hay ciertas cosas a las que debes prestar atención cuando configures
+tus xens. Lo primero es copiar los módulos al xen guest. Por ejemplo,
+montando tu primer xen en /mnt/xen1 y copiando los módulos:
+</p>
+
+<pre>
+# cp -a /lib/modules/2.6.16-2-xen-k7/ /mnt/xen1/lib/modules/
+</pre>
+
+<p>
+Lo segundo es el archivo de configuración. La opción ramdisk está
+desactivada por defecto, pero es obligatoria para iniciar xen! Por
+ejemplo:
+</p>
+
+<pre>
+# vi /etc/xen/xen1.cfg
 kernel = '/boot/vmlinuz-2.6.16-2-xen-k7'
 memory = 128
 name = 'xen1'
@@ -94,7 +230,15 @@ disk = [ 'phy:/dev/mapper/xens-xen1,sda1,w' ]
 root = "/dev/sda1 ro"
 extra = '4'
 ramdisk = "/boot/initrd.img-2.6.16-2-xen-k7"
-vif = [ 'vifname=vif_xen1,bridge=xenbr0' ]</pre>
-Si necesitas actualizar el kernel xen, no olvides actualizar los ficheros de configuración de los guests, los initrds y los módulos en los xen guests!
+vif = [ 'vifname=vif_xen1,bridge=xenbr0' ]
+</pre>
 
+<p>
+Si necesitas actualizar el kernel xen, no olvides actualizar los
+ficheros de configuración de los guests, los initrds y los módulos en
+los xen guests!
+</p>
+
+<p>
 Buena Suerte!
+</p>

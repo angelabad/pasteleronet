@@ -1,13 +1,45 @@
-Artículo traducido de: <a href="http://www.debian-administration.org/articles/299">http://www.debian-administration.org/articles/299</a>
 
-Nagios es un potente y modular sistema de monitorización de red que puede ser usado para monitorizar algunos servicios de red como smtp, http y dns en hosts remotos. También tiene soporte para snmp que permite chequear cosas como la carga del procesador en routers y servidores. No puedo cubrir todas las cosa que nagios puede hacer en este artículo, así que sólo hablaré de lo básico para instalarlo y ponerlo a funcionar.
+<p>
+Artículo traducido de: <a
+href="http://www.debian-administration.org/articles/299">http://www.debian-administration.org/articles/299</a>
+</p>
+
+<p>
+Nagios es un potente y modular sistema de monitorización de red que
+puede ser usado para monitorizar algunos servicios de red como smtp,
+http y dns en hosts remotos. También tiene soporte para snmp que
+permite chequear cosas como la carga del procesador en routers y
+servidores. No puedo cubrir todas las cosa que nagios puede hacer en
+este artículo, así que sólo hablaré de lo básico para instalarlo y
+ponerlo a funcionar.
+</p>
 
 <!--break-->
-<pre># apt-get install nagios-text</pre>
-Primero necesitamos definir la gente que será notificada, y definir como serán notificados. En el ejemplo de abajo, defino dos usuarios, joe y paul. Joe es el guru de la red y se encarga de los routers y los switches. Paul es el chico de sistemas, y se encarga de los servidores. Los dos serán notificados via email y via pager. Nótese que si va a monitorizar su servidor de correo, quizás quiera usar un metodo de notificación alternativo al email. Si su servidor de correo cae, no podrá mandar emails a nadie para notificarles! :) En ese caso quizás quiera utilizar un servidor pager para enviar mensajes de texto a un teléfono o un pager, o instalar un segundo monitor nagios que use otro servidor de correo diferente para enviar emails.
 
+<pre>
+# apt-get install nagios-text
+</pre>
+
+<p>
+Primero necesitamos definir la gente que será notificada, y definir
+como serán notificados. En el ejemplo de abajo, defino dos usuarios,
+joe y paul. Joe es el guru de la red y se encarga de los routers y los
+switches. Paul es el chico de sistemas, y se encarga de los
+servidores. Los dos serán notificados via email y via pager. Nótese
+que si va a monitorizar su servidor de correo, quizás quiera usar un
+metodo de notificación alternativo al email. Si su servidor de correo
+cae, no podrá mandar emails a nadie para notificarles! :) En ese caso
+quizás quiera utilizar un servidor pager para enviar mensajes de texto
+a un teléfono o un pager, o instalar un segundo monitor nagios que use
+otro servidor de correo diferente para enviar emails.
+</p>
+
+<p>
 Edite /etc/nagios/contacts.cfg y añada los siguientes usuarios:
-<pre>define contact{
+</p>
+
+<pre>
+define contact{
 contact_name                    joe
 alias                           Joe Blow
 service_notification_period     24x7
@@ -44,13 +76,25 @@ define contactgroup{
 contactgroup_name   server_admin
 alias               Systems Administrators
 members             paul
-}</pre>
-Puede añadir múltiples miembros a un grupo de contacto separándolos mediante comas.
+}
+</pre>
 
-Ahora defina algunos hosts para monitorizar. Para mi ejemplo, he definido dos máquinas, un servidor de correo y un router.
+<p>
+Puede añadir múltiples miembros a un grupo de contacto separándolos
+mediante comas.
+</p>
 
+<p>
+Ahora defina algunos hosts para monitorizar. Para mi ejemplo, he
+definido dos máquinas, un servidor de correo y un router.
+</p>
+
+<p>
 Edite /etc/nagios/hosts.cfg y añada:
-<pre>define host{
+</p>
+
+<pre>
+define host{
 use                     generic-host
 host_name               gw1.yourdomain.com
 alias                   Gateway Router
@@ -72,11 +116,21 @@ max_check_attempts      20
 notification_interval   240
 notification_period     24x7
 notification_options    d,u,r
-}</pre>
-Ahora añadimos los hosts a grupos. He definido grupos llamados 'routers' y 'servers' y añadido el router y el servidor de correo respectivamente.
+}
+</pre>
 
+<p>
+Ahora añadimos los hosts a grupos. He definido grupos llamados
+'routers' y 'servers' y añadido el router y el servidor de correo
+respectivamente.
+</p>
+
+<p>
 Edite /etc/nagios/hostgroups.cfg
-<pre>define hostgroup{
+</p>
+
+<pre>
+define hostgroup{
 hostgroup_name  routers
 alias           Routers
 contact_groups  router_admin
@@ -88,13 +142,27 @@ hostgroup_name  servers
 alias           Servers
 contact_groups  server_admin
 members         mail.yourdomain.com
-}</pre>
+}
+</pre>
+
+<p>
 Otra vez, para múltiples miembros, simplemente sepárelos con comas.
+</p>
 
-Lo siguiente es definir que servicios hay que monitorizar en cada host. Nagios viene con múltiples plugins para monitorización. En un sistema debian sarge, se encuentran en /usr/lib/nagios/plugins. En este caso queremos monitorizar el servicio smtp en el servidor de correo, y el chequear el ping en el router.
+<p>
+Lo siguiente es definir que servicios hay que monitorizar en cada
+host. Nagios viene con múltiples plugins para monitorización. En un
+sistema debian sarge, se encuentran en /usr/lib/nagios/plugins. En
+este caso queremos monitorizar el servicio smtp en el servidor de
+correo, y el chequear el ping en el router.
+</p>
 
+<p>
 Edite /etc/nagios/services.cfg
-<pre>define service{
+</p>
+
+<pre>
+define service{
 use                     generic-service
 host_name               mail.yourdomain.com
 service_description     SMTP
@@ -124,17 +192,69 @@ notification_interval   240
 notification_period     24x7
 notification_options    w,u,c,r
 check_command           check_ping!100.0,20%!500.0,60%
-}</pre>
+}
+</pre>
+
+<p>
 Y eso es todo. Para probar su configuración puede ejecutar
-<pre># nagios -v /etc/nagios/nagios.cfg</pre>
-Si todo va bien podemos reiniciar nagios y moverlo al sitio de apache para obtener la vista visual del monitor.
-<pre># /etc/init.d/nagios restart</pre>
-Asumiendo que tiene un apache instalado y funcionando, puede añadir el fichero apache.conf que viene incluido en el paquete nagios para hacer funcionar la interfaz de administración cgi de nagios. La interfaz web no es obligatoria para correr nagios, pero es altamente recomendable. La forma más fácil de tenerla funcionando es copiar el fichero proporcionado sobre su instalación de apache. En mi sistema, tengo corriendo apache2. Los sistemas con apache 1.3.xx tendrán pequeñas diferencias.
-<pre># cp /etc/nagios/apache.conf /etc/apache2/sites-enabled/nagios</pre>
-Por supuesto querrá configurarlo como un servidor virtual, pero dejo esto como ejercicio para el lector. Ahora queremos configurar un usuario con permisos para ver la interfaz cgi. Por defecto, nagios proporciona acceso administrativo completo al usuario nagiosadmin. Nagios usa el estilo de autenticación apache htpasswd. Así que añadimos un usuario y contraseña al fichero htpasswd por defecto de nagios. Aquí añado el usuario nagiosadmin con contraseña mypassword al fichero htpasswd de nagios.
-<pre># htpasswd2 -nb nagiosadmin mypassword &gt;&gt; /etc/nagios/htpasswd.users</pre>
+</p>
+
+<pre>
+# nagios -v /etc/nagios/nagios.cfg
+</pre>
+
+<p>
+Si todo va bien podemos reiniciar nagios y moverlo al sitio de apache
+para obtener la vista visual del monitor.
+</p>
+
+<pre>
+# /etc/init.d/nagios restart
+</pre>
+
+<p>
+Asumiendo que tiene un apache instalado y funcionando, puede añadir el
+fichero apache.conf que viene incluido en el paquete nagios para hacer
+funcionar la interfaz de administración cgi de nagios. La interfaz web
+no es obligatoria para correr nagios, pero es altamente
+recomendable. La forma más fácil de tenerla funcionando es copiar el
+fichero proporcionado sobre su instalación de apache. En mi sistema,
+tengo corriendo apache2. Los sistemas con apache 1.3.xx tendrán
+pequeñas diferencias.
+</p>
+
+<pre>
+# cp /etc/nagios/apache.conf /etc/apache2/sites-enabled/nagios
+</pre>
+
+<p>
+Por supuesto querrá configurarlo como un servidor virtual, pero dejo
+esto como ejercicio para el lector. Ahora queremos configurar un
+usuario con permisos para ver la interfaz cgi. Por defecto, nagios
+proporciona acceso administrativo completo al usuario
+nagiosadmin. Nagios usa el estilo de autenticación apache
+htpasswd. Así que añadimos un usuario y contraseña al fichero htpasswd
+por defecto de nagios. Aquí añado el usuario nagiosadmin con
+contraseña mypassword al fichero htpasswd de nagios.
+</p>
+
+<pre>
+# htpasswd2 -nb nagiosadmin mypassword &gt;&gt; /etc/nagios/htpasswd.users
+</pre>
+
+<p>
 Ahora puede reiniciar apache y logearse en
+</p>
 
+<p>
 <a href="http://tu.servidor.nagios/nagios">http://tu.servidor.nagios/nagios</a>
+</p>
 
-Nagios es una herramienta muy potente para monitorizar redes. Sólo he tocado lo básico aquí, pero lo suficiente para tenerlo instalado y funcionando. Posiblemente, una vez que lo tenga, empezará a experimentar con las increíbles características y plugins que hay disponibles. La documentación incluida con la interfaz cgi es muy buena y detallada.
+<p>
+Nagios es una herramienta muy potente para monitorizar redes. Sólo he
+tocado lo básico aquí, pero lo suficiente para tenerlo instalado y
+funcionando. Posiblemente, una vez que lo tenga, empezará a
+experimentar con las increíbles características y plugins que hay
+disponibles. La documentación incluida con la interfaz cgi es muy
+buena y detallada.
+</p>

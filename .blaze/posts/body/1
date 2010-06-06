@@ -1,50 +1,141 @@
-<p>Tengo en casa la televisión a traves de <a href="http://www.mythtv.org">Mythtv</a>, por lo tanto tengo un backend con frontend para ver la tele. Mythtv permite configurar otros frontends dentro de la misma red para ver la televisión a traves de la red. Así que a veces me apetecía ver la tele o alguna película en la habitación donde tengo el ordenador de trabajo, lo que ocurre es que este es mi ordenador de "producción" y no queria instalarle un montón de cosas de los repositorios de <a href="http://www.debian-multimedia.org">Debian Multimedia</a>, ya que al ser el ordenador de trabajo lo necesito casi limpio, para virtualizar otras máquinas y no tener software no mantenido por <a href="http://www.debian.org">Debian</a>.</p>
 
-<p>Así que después de darle unas cuantas vueltas al tema me decidí por utilizar un viejo pendrive e instalarle una distribución live con el cliente de mythtv y las configuraciones necesarias para que arranque y se conecte directamente. Después de leer y buscar documentación di con <a href="http://debian-live.alioth.debian.org/">Live Helper</a>, es un programa que nos genera una configuración por defecto para crear una live cd, y un montón de archivos de configuración muy bien auto-explicados. Puede parecer demasiado complicado, pero por defecto nos creará una live de la distribución lenny, pero aparte nos permite personalizar nuestra distribución tanto como queramos.</p>
+<p>
+Tengo en casa la televisión a traves de 
+<a href="http://www.mythtv.org">Mythtv</a>, por lo tanto tengo un
+backend con frontend para ver la tele. Mythtv permite configurar otros
+frontends dentro de la misma red para ver la televisión a traves de la
+red. Así que a veces me apetecía ver la tele o alguna película en la
+habitación donde tengo el ordenador de trabajo, lo que ocurre es que
+este es mi ordenador de "producción" y no queria instalarle un montón
+de cosas de los repositorios de 
+<a href="http://www.debian-multimedia.org">Debian Multimedia</a>, ya
+que al ser el ordenador de trabajo lo necesito casi limpio, para
+virtualizar otras máquinas y no tener software no mantenido por <a
+href="http://www.debian.org">Debian</a>.
+</p>
+
+<p>
+Así que después de darle unas cuantas vueltas al tema me decidí por
+utilizar un viejo pendrive e instalarle una distribución live con el
+cliente de mythtv y las configuraciones necesarias para que arranque y
+se conecte directamente. Después de leer y buscar documentación di con
+<a href="http://debian-live.alioth.debian.org/">Live Helper</a>, es un
+programa que nos genera una configuración por defecto para crear una
+live cd, y un montón de archivos de configuración muy bien
+auto-explicados. Puede parecer demasiado complicado, pero por defecto
+nos creará una live de la distribución lenny, pero aparte nos permite
+personalizar nuestra distribución tanto como queramos.
+</p>
 
 <!--break-->
 
-<p>Live Helper consta de tres fases y cada una con sus archivos de configuración y sus secciones para personalizarlo, son el bootstrap, para la creación inicial, el chroot para la creación de la live y el binary para creación de la imagen de cd o usb.</p>
+<p>
+Live Helper consta de tres fases y cada una con sus archivos de
+configuración y sus secciones para personalizarlo, son el bootstrap,
+para la creación inicial, el chroot para la creación de la live y el
+binary para creación de la imagen de cd o usb.
+</p>
 
-<p>Lo primero, como no, es:</p>
+<p>
+Lo primero, como no, es:
+</p>
 
 <pre>
   # apt-get install live-helper
 </pre>
 
-<p>Ahore vamos a empezar crear la distribución live, el primer comando para crear nuestro esqueleto es lh_config, así que para tener las primeras configuraciones debemos crear un directorio y poner este comando (como root).</p>
+<p>
+Ahora vamos a empezar crear la distribución live, el primer comando
+para crear nuestro esqueleto es lh_config, así que para tener las
+primeras configuraciones debemos crear un directorio y poner este
+comando (como root).
+</p>
 
 <pre>
   # mkdir /root/live
   # lh_config
 </pre>
 
-<p>Esto nos creará dos directorios, <em>config</em>, con todas las configuraciones y <em>scripts</em> que en principio estará vacio. La configuración por defecto es para una lenny, pero podemos cambiarlo pasandole el parametro <em>-d</em> al comando, en caso de que queramos que toda nuestra imagen esté encriptada solo tendriamos que pasarle el parámetro <em>-e aes256</em> y cuando construya la imagen nos pedirá una contraseña con la que encriptará toda la imagen.</p>
+<p>
+Esto nos creará dos directorios, <em>config</em>, con todas las
+configuraciones y <em>scripts</em> que en principio estará vacio. La
+configuración por defecto es para una lenny, pero podemos cambiarlo
+pasandole el parametro <em>-d</em> al comando, en caso de que queramos
+que toda nuestra imagen esté encriptada solo tendriamos que pasarle el
+parámetro <em>-e aes256</em> y cuando construya la imagen nos pedirá
+una contraseña con la que encriptará toda la imagen.
+</p> 
 
-<p>Ahora que tenemos una configuración básica vamos empezar a personalizar nuestra live, tendremos que decirle que paquetes instalar, configurarla para que utilice los repositorios de <a href="http://www.debian-multimedia.org">debian-multimedia</a> e introducir algunos scripts en la home del usuario para que arranque automáticamente las X y el frontend de Mythtv, vamos por pasos...</p>
+<p>
+Ahora que tenemos una configuración básica vamos empezar a
+personalizar nuestra live, tendremos que decirle que paquetes
+instalar, configurarla para que utilice los repositorios de <a
+href="http://www.debian-multimedia.org">debian-multimedia</a> e
+introducir algunos scripts en la home del usuario para que arranque
+automáticamente las X y el frontend de Mythtv, vamos por pasos...
+</p> 
 
-<p>Lo primero que vamos a hacer es configurar la imagen para que arranque con los locales es_ES.utf8 y el teclado en castellano, también la configuraremos para que genere un archivo .img para el pendrive, ya que por defecto creará una iso para cdrom. Así que editamos el fichero <b>config/binary</b> y adaptamos los siguientes parámetros.</p>
+<p>
+Lo primero que vamos a hacer es configurar la imagen para que arranque
+con los locales es_ES.utf8 y el teclado en castellano, también la
+configuraremos para que genere un archivo .img para el pendrive, ya
+que por defecto creará una iso para cdrom. Así que editamos el fichero
+<b>config/binary</b> y adaptamos los siguientes parámetros.
+</p> 
 
 <pre>
 LH_BINARY_IMAGES="usb-hdd"
 LH_BOOTAPPEND_LIVE="locale=es_ES.UTF-8 keyb=es"
 </pre>
 
-<p>Como se puede ver los archivos de configuración vienen muy bien comentados y podemos personalizar casi lo que queramos. Ahora vamos a añadir los repositorios de debian-multimedia, los añadiremos en <em>chroot</em> para que estén disponibles mientras creamos nuestra imagen y en la imagen binaria. Para esto tenemos el directorio <em>config/chroot_sources</em>, así que con nuestro editor favorito crearemos el archivo <b>config/chroot_sources/debian-multimedia.chroot</b>, con la configuración del repositorio para apt.</p>
+<p>
+Como se puede ver los archivos de configuración vienen muy bien
+comentados y podemos personalizar casi lo que queramos. Ahora vamos a
+añadir los repositorios de debian-multimedia, los añadiremos en
+<em>chroot</em> para que estén disponibles mientras creamos nuestra
+imagen y en la imagen binaria. Para esto tenemos el directorio
+<em>config/chroot_sources</em>, así que con nuestro editor favorito
+crearemos el archivo
+<b>config/chroot_sources/debian-multimedia.chroot</b>, con la
+configuración del repositorio para apt.
+</p>
 
 <pre>
 deb http://www.debian-multimedia.org lenny main
 </pre>
 
-<p>Si no queremos que nos de errores por las firmas gpg del repositorio, solo tendremos que crear otro fichero con la firma, con el mismo nombre pero acabado en .gpg, podriamos bajar la firma de su servidor, pero como tengo el paquete debian-multimedia-keyring instalado, ya lo tengo en mi ordenador asi que simplemente lo copiaré.</p>
+<p>
+Si no queremos que nos de errores por las firmas gpg del repositorio,
+solo tendremos que crear otro fichero con la firma, con el mismo
+nombre pero acabado en .gpg, podriamos bajar la firma de su servidor,
+pero como tengo el paquete debian-multimedia-keyring instalado, ya lo
+tengo en mi ordenador asi que simplemente lo copiaré.
+</p> 
 
 <pre>
 cp /usr/share/keyrings/debian-multimedia-keyring.gpg config/chroot_sources/debian-multimedia.chroot.gpg
 </pre>
 
-<p>Ahora tendremos que decirle que paquetes queremos que instale en el chroot antes de crear la imagen, Live Helper provee una serie de listas de software en <em>/usr/share/live-helper/lists/</em> que podemos utilizar, están por ejemplo, gnome, kde, standard-x11, etc... Además lo bueno que tiene es que podemos crear nuestras listas y establecer dependencias. Así que crearé una lista dentro de la configuración que se llame mythtv-frontend y que dependa de standard-x11, que como su nombre indica es el sistema básico de xorg. La lista la configuraré para que ademas de los paquetes de standard-x11 instale mythtv-frontend y ratpoison, que es un gestor de ventanas muy ligero y muy útil para este tipo de configuración ya que ni siquiera decora las ventanas.</p>
+<p>
+Ahora tendremos que decirle que paquetes queremos que instale en el
+chroot antes de crear la imagen, Live Helper provee una serie de
+listas de software en <em>/usr/share/live-helper/lists/</em> que
+podemos utilizar, están por ejemplo, gnome, kde, standard-x11,
+etc... Además lo bueno que tiene es que podemos crear nuestras listas
+y establecer dependencias. Así que crearé una lista dentro de la
+configuración que se llame mythtv-frontend y que dependa de
+standard-x11, que como su nombre indica es el sistema básico de
+xorg. La lista la configuraré para que ademas de los paquetes de
+standard-x11 instale mythtv-frontend y ratpoison, que es un gestor de
+ventanas muy ligero y muy útil para este tipo de configuración ya que
+ni siquiera decora las ventanas.
+</p>
 
-<p>Creamos el archivo <b>config/chroot_local-packageslists/mythtv-frontend</b> con el siguiente contenido.</p>
+<p>
+Creamos el archivo
+<b>config/chroot_local-packageslists/mythtv-frontend</b> con el
+siguiente contenido.
+</p>
 
 <pre>
 ## LH: Mythtv Frontend
@@ -55,58 +146,114 @@ ratpoison
 mythtv-frontend
 </pre>
 
-<p>La directiva <em>#include</em> le dice a nuestra lista que primero tiene que instalar los paquetes de la lista <em>standard-x11</em>, que es parte de Live Helper. Ahora tenemos que decirle en la configuración que queremos que use nuestra lista. Esto se hace en el archivo <b>config/chroot</b> ajustando la siguiente directiva (que por defecto estará en <em>standard</em>).</p>
+<p>
+La directiva <em>#include</em> le dice a nuestra lista que primero
+tiene que instalar los paquetes de la lista <em>standard-x11</em>, que
+es parte de Live Helper. Ahora tenemos que decirle en la configuración
+que queremos que use nuestra lista. Esto se hace en el archivo
+<b>config/chroot</b> ajustando la siguiente directiva (que por defecto
+estará en <em>standard</em>).
+</p>
 
 <pre>
 LH_PACKAGES_LISTS="mythtv-frontend"
 </pre>
 
-<p>También podriamos añadir paquetes sueltos en la configuración mediante la directiva <em>LH_PACKAGES</em>.</p>
+<p>
+También podriamos añadir paquetes sueltos en la configuración mediante
+la directiva <em>LH_PACKAGES</em>.
+</p>
 
-<p>Ahora vamos a añadir el fichero <b>.xsession</b> al usuario live, la mejor forma de hacerlo es incluir ese fichero en <em>/etc/skel</em> para que el propio sistema lo introduzca al crear el usuario (lo hace cada vez que arranca). Para esto Live Helper nos provee de los includes, asi que crearemos el directorio <em>/etc/skel</em> en los includes del chroot. Para introducir includes deberemos replicar el arbol de directorios debajo del directorio <em>chroot_local-includes</em>.</p>
+<p>
+Ahora vamos a añadir el fichero <b>.xsession</b> al usuario live, la
+mejor forma de hacerlo es incluir ese fichero en <em>/etc/skel</em>
+para que el propio sistema lo introduzca al crear el usuario (lo hace
+cada vez que arranca). Para esto Live Helper nos provee de los
+includes, asi que crearemos el directorio <em>/etc/skel</em> en los
+includes del chroot. Para introducir includes deberemos replicar el
+arbol de directorios debajo del directorio
+<em>chroot_local-includes</em>.
+</p>
 
 <pre>
 mkdir -p config/chroot_local-includes/etc/skel
 </pre>
 
-<p>Y ahora con nuestro editor favorito creamos el fichero <b>config/chroot_local-includes/etc/skel/.xsession</b> con el siguiente contenido.</p>
+<p>
+Y ahora con nuestro editor favorito creamos el fichero
+<b>config/chroot_local-includes/etc/skel/.xsession</b> con el
+siguiente contenido.
+</p>
 
 <pre>
 ratpoison &
 mythfrontend
 </pre>
 
-<p>Así le decimos a xorg que cuando arranque, lance ratpoison y después mythfrontend, ahora vamos a introducir el fichero <b>/etc/skel/.bashrc</b> con el comando <em>startx</em> al final. Copiamos el fichero <em>/etc/skel/.bashrc</em> de nuestro sistema en el chroot.</p>
+<p>
+Así le decimos a xorg que cuando arranque, lance ratpoison y después
+mythfrontend, ahora vamos a introducir el fichero
+<b>/etc/skel/.bashrc</b> con el comando <em>startx</em> al
+final. Copiamos el fichero <em>/etc/skel/.bashrc</em> de nuestro
+sistema en el chroot.
+</p>
 
 <pre>
 cp /etc/skel/.bashrc config/chroot_local-includes/etc/skel/
 </pre>
 
-<p>no olvidemos que después de copiar el archivo debemos editarlo y añadir la linea</p>
+<p>no olvidemos que después de copiar el archivo debemos editarlo y
+añadir la linea
+</p>
 
 <pre>
 startx
 </pre>
 
-<p>al final del fichero para que cuando el usuario haga el autologin arranque las X automaticamente.</p> 
+<p>
+al final del fichero para que cuando el usuario haga el autologin
+arranque las X automaticamente.
+</p>
 
-<p>También añadiré la configuración para mi servidor Mythtv y la base de datos remota, pero eso no lo pondré aquí, el procedimiento es idéntico a lo explicado anteriormente.</p>
+<p>
+También añadiré la configuración para mi servidor Mythtv y la base de
+datos remota, pero eso no lo pondré aquí, el procedimiento es idéntico
+a lo explicado anteriormente.
+</p>
 
-<p>Ahora ya tenemos configurada nuestra live, es hora de construirla, tardará un rato, pero guardará una cache de lo que descargue, así que si necesitamos reajustar algo y volver a construir ya no tendremos que descargar todos los paquetes otra vez, para construir la imagen basta con que que ejecutemos:</p>
+<p>
+Ahora ya tenemos configurada nuestra live, es hora de construirla,
+tardará un rato, pero guardará una cache de lo que descargue, así que
+si necesitamos reajustar algo y volver a construir ya no tendremos que
+descargar todos los paquetes otra vez, para construir la imagen basta
+con que que ejecutemos:
+</p>
 
 <pre>
 # lh_build
 </pre>
 
-<p>En caso de que modifiquemos algo de la configuración, antes de volver a ejecutar <em>lh_build</em> es conveniente ejecutar el siguiente comando:</p>
+<p>
+En caso de que modifiquemos algo de la configuración, antes de volver
+a ejecutar <em>lh_build</em> es conveniente ejecutar el siguiente
+comando:
+</p>
 
 <pre>
 # lh_clean
 </pre>
 
-<p><em>lh_clean</em> limpia el árbol de construcción y acepta diferentes parámetros dependiendo de que parte de nuestra construcción queramos limpiar.</p>
+<p>
+<em>lh_clean</em> limpia el árbol de construcción y acepta diferentes
+parámetros dependiendo de que parte de nuestra construcción queramos
+limpiar.
+</p>
 
-<p>Después de un rato de espera tendremos un fichero imagen llamado <b>binary.img</b>. Ahora antes de copiarlo en el pendrive podemos probarlo con <em>kvm</em> o <em>qemu</em></p>
+<p>
+Después de un rato de espera tendremos un fichero imagen llamado
+<b>binary.img</b>. Ahora antes de copiarlo en el pendrive podemos
+probarlo con <em>kvm</em> o <em>qemu</em>
+</p>
 
 <pre>
 # kvm -hda binary.img
@@ -120,15 +267,36 @@ startx
 # qemu -hda binary.img
 </pre>
 
-<p>Una vez que comprebamos que nuestra imagen se comporta como esperamos la copiamos al pendrive, en caso contrario, haremos <em>lh_clean</em>, arreglaremos los fallos y otra vez <em>lh_build</em>, para copiar la imagen al pendrive:</p>
+<p>
+Una vez que comprebamos que nuestra imagen se comporta como esperamos
+la copiamos al pendrive, en caso contrario, haremos <em>lh_clean</em>,
+arreglaremos los fallos y otra vez <em>lh_build</em>, para copiar la
+imagen al pendrive:
+</p>
 
 <pre>
 # dd if=binary.img of=${USBSTICK}
 </pre>
 
-<p>Donde ${USBSTICK} es el dispositivo usb, por ejemplo <em>/dev/sdc</em> (no <em>/dev/sdc1</em>). Prestar <strong>mucha atencion</strong> al ejecutar este comando para no equivocarse de dispositivo, ya que borrara todo lo que tenga. Así que si por error escribimos el nombre de una partición de nuestro disco duro borraremos todos los datos.</p>
+<p>
+Donde ${USBSTICK} es el dispositivo usb, por ejemplo <em>/dev/sdc</em>
+(no <em>/dev/sdc1</em>). Prestar <strong>mucha atencion</strong> al
+ejecutar este comando para no equivocarse de dispositivo, ya que
+borrara todo lo que tenga. Así que si por error escribimos el nombre
+de una partición de nuestro disco duro borraremos todos los datos.
+</p>
 
-<p>En este caso hemos usado Live Helper para algo muy concreto y solo he documentado los pasos que yo seguí para personalizar mi live. Pero Live Helper ofrece muchas más posibilidades, desde incluir el instalador de debian, configurar particiones para almacenar la <em>home</em> del usuario, snapshots, hooks, etc... Los ficheros de configuracion están muy bien documentados y el nombre de los directorios nos da una pista de su uso, el manual de Live Helper es muy extenso y documenta muy bien sus posibilidades, se puede leer online <a href="http://live.debian.net/manual/html/">aquí</a>.</p>
+<p>
+En este caso hemos usado Live Helper para algo muy concreto y solo he
+documentado los pasos que yo seguí para personalizar mi live. Pero
+Live Helper ofrece muchas más posibilidades, desde incluir el
+instalador de debian, configurar particiones para almacenar la
+<em>home</em> del usuario, snapshots, hooks, etc... Los ficheros de
+configuracion están muy bien documentados y el nombre de los
+directorios nos da una pista de su uso, el manual de Live Helper es
+muy extenso y documenta muy bien sus posibilidades, se puede leer
+online <a href="http://live.debian.net/manual/html/">aquí</a>.
+</p>
 
 <p>Enlaces</p>
 <ul>

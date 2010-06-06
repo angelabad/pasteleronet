@@ -1,30 +1,92 @@
-Artículo traducido de: <a href="http://ornellas.apanela.com/dokuwiki/pub:multiarch">http://ornellas.apanela.com/dokuwiki/pub:multiarch</a>
+
+<p>
+Artículo traducido de: <a
+href="http://ornellas.apanela.com/dokuwiki/pub:multiarch">http://ornellas.apanela.com/dokuwiki/pub:multiarch</a>
+</p>
+
 <h3>Introducción</h3>
-Con la llegada de los sistemas que soportan la nueva arquitectura de AMD, los <a href="http://es.wikipedia.org/wiki/X86-64">AMD64</a>, llega un periodo de transición para algunas aplicaciones desarrolladas para la arquitectura de Intel <a href="http://es.wikipedia.org/wiki/IA-32">IA-32</a> y que todavía no están portadas a AMD64. Así que muchas veces no es posible tener un sistema AMD64 puro al 100%, por la necesidad de ejecutar antiguas aplicaciones IA-32, tales como <a href="http://es.wikipedia.org/wiki/Adobe_Flash">Flash</a>, <a href="http://es.wikipedia.org/wiki/Skype">Skype</a> o <a href="http://www.opera.com/">Opera</a>.
+<p>
+Con la llegada de los sistemas que soportan la nueva arquitectura de
+AMD, los <a href="http://es.wikipedia.org/wiki/X86-64">AMD64</a>,
+llega un periodo de transición para algunas aplicaciones desarrolladas
+para la arquitectura de Intel <a
+href="http://es.wikipedia.org/wiki/IA-32">IA-32</a> y que todavía no
+están portadas a AMD64. Así que muchas veces no es posible tener un
+sistema AMD64 puro al 100%, por la necesidad de ejecutar antiguas
+aplicaciones IA-32, tales como <a
+href="http://es.wikipedia.org/wiki/Adobe_Flash">Flash</a>, <a
+href="http://es.wikipedia.org/wiki/Skype">Skype</a> o <a
+href="http://www.opera.com/">Opera</a>.
+</p>
 
-En este escenario, es posible configurar un sistema que contenga las dos instalaciones completas, una por cada arquitectura y totalmente transparente para el usuario final. De esta manera, seremos capaces de disfrutar de las ventajas de la arquitectura de AMD y aún ser capaces de ejecutar todas las aplicaciones que son sólo para IA-32.
+<p>
+En este escenario, es posible configurar un sistema que contenga las
+dos instalaciones completas, una por cada arquitectura y totalmente
+transparente para el usuario final. De esta manera, seremos capaces de
+disfrutar de las ventajas de la arquitectura de AMD y aún ser capaces
+de ejecutar todas las aplicaciones que son sólo para IA-32.
+</p>
 
-Es importante resaltar que este artículo se centra en sistemas <a href="http://www.debian.org">Debian</a>, aunque los conceptos aquí explicados son aplicables a cualquier distribución Linux.
+<p>
+Es importante resaltar que este artículo se centra en sistemas <a
+href="http://www.debian.org">Debian</a>, aunque los conceptos aquí
+explicados son aplicables a cualquier distribución Linux.
+</p>
 
 <!--break-->
 
 <h3>Instalación</h3>
 <strong>AMD64</strong>
 
-En el ordenador se debe instalar un sistema completo AMD64. Este sistema debe tener un kernel capaz de ejecutar binarios de las dos arquitecturas (los kernels distribuidos por Debian son capaces). Simplemente haz la instalación como lo harías habitualmente.
+<p>
+En el ordenador se debe instalar un sistema completo AMD64. Este
+sistema debe tener un kernel capaz de ejecutar binarios de las dos
+arquitecturas (los kernels distribuidos por Debian son
+capaces). Simplemente haz la instalación como lo harías
+habitualmente.
+</p>
 
 <strong>IA-32</strong>
 
-Un vez tengas instalado y funcionando el sistema con AMD64, el sistema IA-32 debe ser instalado en un directorio cualquiera. Se puede instalar desde el sistema AMD64 que se está ejecutando, con la ayuda de una aplicación llamada <a href="http://packages.debian.org/stable/admin/debootstrap">debootstrap</a>. Esta utilidad ejecutará un proceso similar a lo que ocurre, por ejemplo, cuando instalas una Debian desde CD, pero en este caso no es necesario reiniciar o grabar un CD.
-<pre># mkdir /ia32
-# debootstrap --arch i386 --verbose etch /ia32 http://ftp.fi.debian.org/debian</pre>
-En el ejemplo, una Debian Etch IA-32 sera instalada bajo /ia32. Este directorio será el directorio root del nuevo sistema. Este no será el raiz del sistema AMD64 (/). Por ejemplo, /etc corresponde al sistema AMD64 y /ia32/etc al sistema IA-32.
+<p>
+Un vez tengas instalado y funcionando el sistema con AMD64, el sistema
+IA-32 debe ser instalado en un directorio cualquiera. Se puede
+instalar desde el sistema AMD64 que se está ejecutando, con la ayuda
+de una aplicación llamada <a
+href="http://packages.debian.org/stable/admin/debootstrap">debootstrap</a>. Esta
+utilidad ejecutará un proceso similar a lo que ocurre, por ejemplo,
+cuando instalas una Debian desde CD, pero en este caso no es necesario
+reiniciar o grabar un CD.
+</p>
 
-El acceso al IA-32 será proporcionado gracias a chroot (se explica más abajo).
+<pre>
+# mkdir /ia32
+# debootstrap --arch i386 --verbose etch /ia32 http://ftp.fi.debian.org/debian
+</pre>
+
+<p>
+En el ejemplo, una Debian Etch IA-32 sera instalada bajo /ia32. Este
+directorio será el directorio root del nuevo sistema. Este no será el
+raiz del sistema AMD64 (/). Por ejemplo, /etc corresponde al sistema
+AMD64 y /ia32/etc al sistema IA-32.
+</p>
+
+<p>
+El acceso al IA-32 será proporcionado gracias a chroot (se explica más
+abajo).
+</p>
+
 <h3>Configuración</h3>
+
 <strong>Red</strong>
 
-La configuración de la red debe ser compartida por los dos sistemas. Para conseguir esto, algunos ficheros dentro del chroot (IA-32) tienen que ser sobreescritos con enlaces simbólicos del raiz (AMD64), siguiendo la tabla de debajo:
+<p>
+La configuración de la red debe ser compartida por los dos
+sistemas. Para conseguir esto, algunos ficheros dentro del chroot
+(IA-32) tienen que ser sobreescritos con enlaces simbólicos del raiz
+(AMD64), siguiendo la tabla de debajo:
+</p>
+
 <table>
 <tr>
 <td>Archivo</td>
@@ -55,13 +117,31 @@ La configuración de la red debe ser compartida por los dos sistemas. Para conse
 <td>../amd64/etc/networks</td>
 </tr>
 </table>
+
+<p>
 Por ejemplo:
-<pre># ln -sf ../amd64/etc/hostname /ia32/etc/hostname</pre>
-Esto hará un enlace simbólico de /ia32/etc/hostname a ../amd64/etc/hostname. No te preocupes por /ia32/amd64, se explicará más abajo.
+</p>
+
+<pre>
+# ln -sf ../amd64/etc/hostname /ia32/etc/hostname
+</pre>
+
+<p>
+Esto hará un enlace simbólico de /ia32/etc/hostname a
+../amd64/etc/hostname. No te preocupes por /ia32/amd64, se explicará
+más abajo.
+</p>
 
 <strong>Usuarios y Grupos</strong>
 
-Es importante que las bases de datos de usuarios y grupo sean exactamente las mismas en los dos sistemas. Una manera simple (no prefecta) de hacer esto es sustituir los ficheros del chroot por enlaces simbólicos al sistema raiz (igual que la configuración de la red), como se ve en la tabla siguiente:
+<p>
+Es importante que las bases de datos de usuarios y grupo sean
+exactamente las mismas en los dos sistemas. Una manera simple (no
+prefecta) de hacer esto es sustituir los ficheros del chroot por
+enlaces simbólicos al sistema raiz (igual que la configuración de la
+red), como se ve en la tabla siguiente:
+</p>
+
 <table>
 <tr>
 <td>Archivo</td>
@@ -84,21 +164,53 @@ Es importante que las bases de datos de usuarios y grupo sean exactamente las mi
 <td>../amd64/etc/gshadow</td>
 </tr>
 </table>
+
+<p>
 Ejemplo:
-<pre># ln -sf ../amd64/etc/passwd /ia32/etc/passwd</pre>
-Esto hará un enlace simbólico de /ia32/etc/passwd a ../amd64/etc/passwd. No te preocupes por /ia32/amd64, se explicará más abajo.
+</p>
 
-La mejor solución podría ser usar algún tipo de backend para base de datos de este tipo como por ejemplo, <a href="http://es.wikipedia.org/wiki/NIS">NIS</a>, configurando el AMD64 como maestro y el IA-32 como esclavo, para el 100% de las bases de datos.
+<pre>
+# ln -sf ../amd64/etc/passwd /ia32/etc/passwd
+</pre>
 
-Una explicación de como hacer esto sería bien venida (o una solución mejor).
+<p>
+Esto hará un enlace simbólico de /ia32/etc/passwd a
+../amd64/etc/passwd. No te preocupes por /ia32/amd64, se explicará más
+abajo.
+</p>
+
+<p>
+La mejor solución podría ser usar algún tipo de backend para base de
+datos de este tipo como por ejemplo, <a
+href="http://es.wikipedia.org/wiki/NIS">NIS</a>, configurando el AMD64
+como maestro y el IA-32 como esclavo, para el 100% de las bases de
+datos.
+</p>
+
+<p>
+Una explicación de como hacer esto sería bien venida (o una solución
+mejor).
+</p>
 
 <strong>Iniciado</strong>
 
-Para asegurar la trasnparencia de las operaciones dentro y fuera del chroot, algunos paths del sistema AMD64 deben ser remontados dentro del chroot IA-32. Esto también es necesario para iniciar algunos servicios dentro del sistema IA-32.
+<p>
+Para asegurar la trasnparencia de las operaciones dentro y fuera del
+chroot, algunos paths del sistema AMD64 deben ser remontados dentro
+del chroot IA-32. Esto también es necesario para iniciar algunos
+servicios dentro del sistema IA-32.
+</p>
 
-Para esto, crearemos dos ficheros de inicialización en el AMD64, que serán los responsables de iniciar algunos servicios del IA-32.
+<p>
+Para esto, crearemos dos ficheros de inicialización en el AMD64, que
+serán los responsables de iniciar algunos servicios del IA-32.
+</p>
 
-El primer fichero, lo crearemos en /etc/init.d/ia32S.sh (perteneciente a root con permisos 755), con el siguiente contenido:
+<p>
+El primer fichero, lo crearemos en /etc/init.d/ia32S.sh (perteneciente
+a root con permisos 755), con el siguiente contenido:
+</p>
+
 <pre>
 #!/bin/bash
 
@@ -126,19 +238,55 @@ case "$1" in
     echo "Error: Wrong usage." 1&gt;&amp;2
     exit 1
     ;;
-esac</pre>
+esac
+</pre>
+
+<p>
 Y lo añadimos al sistema de inicio del AMD64:
-<pre>update-rc.d ia32S.sh start 99 S .</pre>
+</p>
+
+<pre>
+update-rc.d ia32S.sh start 99 S .
+</pre>
+
+<p>
 Este script hará lo siguiente:
+</p>
+
 <ul>
 	<li>Remontará algunos directorios del AMD64 dentro del IA-32 (incluyendo el raiz / en /ia32/amd64).</li>
 	<li>Iniciar algunos servicios específicos dentro del chroot (la variable IA32_SERVICES).</li>
 </ul>
-Los directorios remontados aseguran que algunos sistemas de ficheros virtuales (como procfs y sysfs) existen dentro del IA-32, los directorios home son los mismos dentro y fuera del chroot, los directorios temporales son compartidos (en especial /tmp para permitir a las aplicaciones X11 acceder siempre a los mismos sockets Unix) y los usuarios acceden siempre a los mismos buzones de correo.
 
-Los servicios iniciados (IA32_SERVICES) dependen de lo que tengamos instalado dentro del chroot. Los del ejemplo son simplemente para referencia. Debes mirar en /ia32/rcS.d y ver cuales aplicar a tu sistema. Los que <strong>no</strong> deben ser ejecutados son: mountvirtfs, bootlogd, keymap.sh, checkroot.sh, hwclockfirst.sh, ifupdown-clean, checkfs.sh, procps.sh, mountall.sh, mountvirtfs, ifupdown, hostname.sh, networking, mountnfs.sh, console-screen.sh, hwclock.sh, bootmisc.sh y urandom.
+<p>
+Los directorios remontados aseguran que algunos sistemas de ficheros
+virtuales (como procfs y sysfs) existen dentro del IA-32, los
+directorios home son los mismos dentro y fuera del chroot, los
+directorios temporales son compartidos (en especial /tmp para permitir
+a las aplicaciones X11 acceder siempre a los mismos sockets Unix) y
+los usuarios acceden siempre a los mismos buzones de correo.
+</p>
 
-Algunos servicios deben ser ejecutados dentro del chroot (aparte del sistema AMD64) para asegurar que ciertas partes del sistema funcionan. En especial hay que ejecutar cron(8), ya que muchos rotados de logs son ejecutados por él. Para configurar estos servicios, crea el fichero /etc/init.d/ia32.sh (en el sistema AMD64, con usuario root y permisos 755) con el siguiente contenido:
+<p>
+Los servicios iniciados (IA32_SERVICES) dependen de lo que tengamos
+instalado dentro del chroot. Los del ejemplo son simplemente para
+referencia. Debes mirar en /ia32/rcS.d y ver cuales aplicar a tu
+sistema. Los que <strong>no</strong> deben ser ejecutados son:
+mountvirtfs, bootlogd, keymap.sh, checkroot.sh, hwclockfirst.sh,
+ifupdown-clean, checkfs.sh, procps.sh, mountall.sh, mountvirtfs,
+ifupdown, hostname.sh, networking, mountnfs.sh, console-screen.sh,
+hwclock.sh, bootmisc.sh y urandom.
+</p>
+
+<p>
+Algunos servicios deben ser ejecutados dentro del chroot (aparte del
+sistema AMD64) para asegurar que ciertas partes del sistema
+funcionan. En especial hay que ejecutar cron(8), ya que muchos rotados
+de logs son ejecutados por él. Para configurar estos servicios, crea
+el fichero /etc/init.d/ia32.sh (en el sistema AMD64, con usuario root
+y permisos 755) con el siguiente contenido:
+</p>
+
 <pre>
 #!/bin/bash
 
@@ -162,53 +310,156 @@ case "$1" in
     echo "Error: Wrong usage." 1&gt;&amp;2
     exit 1
     ;;
-esac</pre>
+esac
+</pre>
+
+<p>
 Y añadelo al inicio:
-<pre># update-rc.d ia32.sh defaults 99 1</pre>
-La variable IA32_SERVICES debe contener los servicios que queremos/debemos iniciar. Es recomendable iniciar los servicios arriba mencionados siempre (nullmailer se verá después).
+</p>
+
+<pre>
+# update-rc.d ia32.sh defaults 99 1
+</pre>
+
+<p>
+La variable IA32_SERVICES debe contener los servicios que
+queremos/debemos iniciar. Es recomendable iniciar los servicios arriba
+mencionados siempre (nullmailer se verá después).
+</p>
 
 <strong>MTA</strong>
 
-Para asegurarnos el envío de correo desde dentro y fuera del chroot, se puede configurar un <a href="http://es.wikipedia.org/wiki/Mail_transfer_agent">MTA</a> a eleción en el AMD64 (por ejemplo <a href="http://www.postfix.org/">Postfix</a>) y en el IA-32, usar <a href="http://packages.debian.org/stable/mail/nullmailer">nullmailer</a> falso MTA. Nullmailer se configura para que haga relay con los mensajes al smarthost localhost (donde el Postfix del AMD64 estará escuchando en el puerto 25).
+<p>
+Para asegurarnos el envío de correo desde dentro y fuera del chroot,
+se puede configurar un <a
+href="http://es.wikipedia.org/wiki/Mail_transfer_agent">MTA</a> a
+eleción en el AMD64 (por ejemplo <a
+href="http://www.postfix.org/">Postfix</a>) y en el IA-32, usar <a
+href="http://packages.debian.org/stable/mail/nullmailer">nullmailer</a>
+falso MTA. Nullmailer se configura para que haga relay con los
+mensajes al smarthost localhost (donde el Postfix del AMD64 estará
+escuchando en el puerto 25).
+</p>
 
-Para hacer esto, crea el fichero /etc/nullmailer/remotes (con usuario root y permisos 644) con unicamente la siguiente linea:
-<pre>localhost</pre>
+<p>
+Para hacer esto, crea el fichero /etc/nullmailer/remotes (con usuario
+root y permisos 644) con unicamente la siguiente linea:
+</p>
+
+<pre>
+localhost
+</pre>
+
+<p>
 No debería haber más ficheros en /etc/nullmailer.
+</p>
 
-Notese que el directorio /var/spool/mail fue remontado dentro del chroot. Así que los usuarios podrán chequear su correo normalmente.
+<p>
+Notese que el directorio /var/spool/mail fue remontado dentro del
+chroot. Así que los usuarios podrán chequear su correo normalmente.
+</p>
 
+<p>
 Asegurese de incluir nullmailer en el inicio de servicios del IA-32.
+</p>
 
 <strong>cront / at</strong>
 
-Son interesantes porque los dos son programadores de tareas (inserte los dos en el inicio de servicios del IA-32). Esto asegura que se ejecutan las tareas de mantenimiento en los dos sistemas.
+<p>
+Son interesantes porque los dos son programadores de tareas (inserte
+los dos en el inicio de servicios del IA-32). Esto asegura que se
+ejecutan las tareas de mantenimiento en los dos sistemas.
+</p>
 
 <strong>/etc/mtab de IA-32</strong>
 
-El fichero /etc/mtab del IA-32 (/ia32/etc/mtab desde el sistema AMD64) es usado para almacenar información acerca de los sitemas de ficheros montados. Debe asegurarse de que este fichero es correcto, y la única manera es corregirlo manualmente para reflejar los sistemas de ficheros montados que se ven desde el sistema IA-32.
+<p>
+El fichero /etc/mtab del IA-32 (/ia32/etc/mtab desde el sistema AMD64)
+es usado para almacenar información acerca de los sitemas de ficheros
+montados. Debe asegurarse de que este fichero es correcto, y la única
+manera es corregirlo manualmente para reflejar los sistemas de
+ficheros montados que se ven desde el sistema IA-32.
+</p>
 
-La manera mas fácil de hacer esto es configurando todo hasta el final de este artículo, reiniciar el sistema y chequear todo. Acceder al chroot con dchroot, verificar /proc/mounts para ver que está montado y corregir /etc/mtab. Para comprobar si funciona, use la herramienta df.
+<p>
+La manera mas fácil de hacer esto es configurando todo hasta el final
+de este artículo, reiniciar el sistema y chequear todo. Acceder al
+chroot con dchroot, verificar /proc/mounts para ver que está montado y
+corregir /etc/mtab. Para comprobar si funciona, use la herramienta
+df.
+</p>
 
 <strong>locate</strong>
 
+<p>
 Esta linea deberá ser corregida en el sistema AMD64:
-<pre>PRUNEPATHS="/tmp /usr/tmp /var/tmp /afs /amd /alex /var/spool /sfs /media /ia32/dev /ia32/home /ia32/proc /ia32/amd64 /ia32/root /ia32/sys /ia32/tmp /ia32/var/mail /ia32/var/tmp"</pre>
-en el fichero /etc/updatedb.conf para evitar la recursividad en la base de datos de <a href="http://packages.debian.org/stable/utils/findutils">locate</a>.
+</p>
 
+<pre>
+PRUNEPATHS="/tmp /usr/tmp /var/tmp /afs /amd /alex /var/spool /sfs /media /ia32/dev /ia32/home /ia32/proc /ia32/amd64 /ia32/root /ia32/sys /ia32/tmp /ia32/var/mail /ia32/var/tmp"</pre>
+
+<p>
+en el fichero /etc/updatedb.conf para evitar la recursividad en la
+base de datos de <a
+href="http://packages.debian.org/stable/utils/findutils">locate</a>.
+</p>
+
+<p>
 Igualmente, dentro del chroot IA-32:
-<pre>PRUNEPATHS="/tmp /usr/tmp /var/tmp /afs /amd /alex /var/spool /sfs /media /amd64"</pre>
+</p>
+
+<pre>
+PRUNEPATHS="/tmp /usr/tmp /var/tmp /afs /amd /alex /var/spool /sfs
+/media /amd64"
+</pre>
+
 <strong>Acceder al chroot IA-32</strong>
 
-El acceso al sistema IA-32 se consigue mediante un chroot. El comando chroot(8) (común en todas las distribuciones Linux) lo hace, pero unicamente para root. Las distribuciones Debian vienen una herramienta llamada <a href="http://packages.debian.org/stable/admin/dchroot">dchroot</a> que permite al administrador otorgar privilegios dentro de algunos chroots a usuarios normales.
+<p>
+El acceso al sistema IA-32 se consigue mediante un chroot. El comando
+chroot(8) (común en todas las distribuciones Linux) lo hace, pero
+unicamente para root. Las distribuciones Debian vienen una herramienta
+llamada <a
+href="http://packages.debian.org/stable/admin/dchroot">dchroot</a> que
+permite al administrador otorgar privilegios dentro de algunos chroots
+a usuarios normales.
+</p>
 
-La herramienta se configura mediante el fichero /etc/dchroot.conf. Añada la siguiente linea:
-<pre>ia32 /ia32</pre>
-Esto permitira a cualquier usuario del AMD64 (excepto root) acceder al chroot IA-32 en /ia32 con el comando:
-<pre>$ dchroot -d -c ia32 [comando]</pre>
-El [comando] será ejecutado dentro del chroot IA-32 en /ia32. El [comando] "verá" /ia32 como su directorio raiz. Por ello, todo ocurrirá como si estuviera pasando en un sistema IA-32 convencional, sin siquiera saber que otro sistema AMD64 completo está corriendo en la misma máquina. Sin el parametro [comando] obtendremos una Shell dentro del chroot.
+<p>
+La herramienta se configura mediante el fichero
+/etc/dchroot.conf. Añada la siguiente linea:
+</p>
 
-Ahora puede instalar todo lo que necesite dentro del AMD64, y sólo unas pocas aplicaciones IA-32 dentro de su chroot IA-32. Simplemente asegurese de ejecutar el comando en el entorno adecuado!
+<pre>
+ia32 /ia32
+</pre>
+
+<p>
+Esto permitira a cualquier usuario del AMD64 (excepto root) acceder al
+chroot IA-32 en /ia32 con el comando:
+</p>
+
+<pre>
+$ dchroot -d -c ia32 [comando]
+</pre>
+
+<p>
+El [comando] será ejecutado dentro del chroot IA-32 en /ia32. El
+[comando] "verá" /ia32 como su directorio raiz. Por ello, todo
+ocurrirá como si estuviera pasando en un sistema IA-32 convencional,
+sin siquiera saber que otro sistema AMD64 completo está corriendo en
+la misma máquina. Sin el parametro [comando] obtendremos una Shell
+dentro del chroot.
+</p>
+
+<p>
+Ahora puede instalar todo lo que necesite dentro del AMD64, y sólo
+unas pocas aplicaciones IA-32 dentro de su chroot IA-32. Simplemente
+asegurese de ejecutar el comando en el entorno adecuado!
+</p>
+
 <h3>Limitaciones</h3>
+
 <ul>
 	<li> Como los dos sistemas utilizan el mismo <a href="http://es.wikipedia.org/wiki/Kernel">kernel</a>, todos los recursos del kernel (como los puertos de escucha TCP o UDP, ficheros abiertos, etc), son compartidos. No hay forma por ejemplo, de tener dos servidores web corriendo (uno en cada sistema) en el puerto 80. Cada uno deberá usar un puerto diferente.</li>
 	<li>Los nuevos puntos de montaje en el raiz del AMD64 no estarán diponibles automáticamente para las alicaciones ejecutadas dentro del chroot (p.e. un dvd montado). El administrador debe remontarlos manualmente dentro del chroot. Una posible solución sería el uso de <a href="http://packages.debian.org/stable/admin/udev">udev</a> o <a href="http://packages.debian.org/stable/admin/hal">HAL</a> para el montaje automático.</li>

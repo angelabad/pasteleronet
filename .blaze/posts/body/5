@@ -1,8 +1,16 @@
-Artículo traducido de: <a href="http://www.howtoforge.com/debian_subversion_websvn">http://www.howtoforge.com/debian_subversion_websvn</a>
 
-<strong>Proposito de este howto</strong>
+<p>
+Artículo traducido de: <a
+href="http://www.howtoforge.com/debian_subversion_websvn">http://www.howtoforge.com/debian_subversion_websvn</a>
+</p>
 
-Este howto muestra como instalar y configurar Subversion y Websvn en un servidor Debian con las siguientes características:
+<h3>Proposito de este howto</h3>
+
+<p>
+Este howto muestra como instalar y configurar Subversion y Websvn en
+un servidor Debian con las siguientes características:
+</p>
+
 <ul>
 	<li>Multiples repositorios <a href="http://subversion.tigris.org/">Subversion</a></li>
 	<li>Acceso a los repositorios a través de WebDAV (https, http) y ssh</li>
@@ -10,64 +18,155 @@ Este howto muestra como instalar y configurar Subversion y Websvn en un servidor
 	<li><a href="http://websvn.tigris.org/">Websvn</a> seguro (aplicación web php para visualizar el código fácilmente)</li>
 	<li>Coloreado de sintaxis en websvn con <a href="http://www.codento.com/people/mtr/genscript/">gnu enscript</a></li>
 </ul>
+
 <!--break-->
-No configuraré <em>inetd</em> con <em>svnserve</em> en este howto. Subversion será totalmente funcional sin el. Puede copiar/pegar la mayoría de este howto y le funcionará.
 
-<strong>Paquetes que se asume que deben estar instalados</strong>
+<p>
+No configuraré <em>inetd</em> con <em>svnserve</em> en este
+howto. Subversion será totalmente funcional sin el. Puede copiar/pegar
+la mayoría de este howto y le funcionará.
+</p>
 
-Este howto asume que PHP y Apache2 están instalados y configurados. La configuración de apache2 con SSL es opcional.
+<h3>Paquetes que se asume que deben estar instalados</h3>
 
-<strong>Instalando Subversion</strong>
+<p>
+Este howto asume que PHP y Apache2 están instalados y configurados. La
+configuración de apache2 con SSL es opcional.
+</p>
 
+<h3>Instalando Subversion</h3>
+
+<p>
 <em>Paquetes Subversion</em>
+</p>
 
-Como root puede introducir los siguientes comandos para instalar los paquetes necesarios para el funcionamiento de Subversion:
-<pre># apt-get update
+<p>
+Como root puede introducir los siguientes comandos para instalar los
+paquetes necesarios para el funcionamiento de Subversion:
+</p>
+
+<pre>
+# apt-get update
 # apt-get install subversion
-# apt-get install libapache2-svn</pre>
-El paquete libapache2-svn instalará el módulo apache WebDav de subversion.
+# apt-get install libapache2-svn
+</pre>
 
+<p>
+El paquete libapache2-svn instalará el módulo apache WebDav de
+subversion.
+</p>
+
+<p>
 <em>Creando y poblando los repositorios</em>
+</p>
 
+<p>
 Para trabajar con este howto crearemos dos repositorios:
-<pre># mkdir /var/svn-repos/
+</p>
+
+<pre>
+# mkdir /var/svn-repos/
 # svnadmin create --fs-type fsfs /var/svn-repos/project_zen
-# svnadmin create --fs-type fsfs /var/svn-repos/project_wombat</pre>
-Los directorios de los repositorios necesitan los permisos apropiados para apache y los demás usuarios. Crearé un grupo y le añadiré los usuarios (no haga copiar/pegar aquí). El usuario de apache no lo pondremos en el grupo, ya que lo encuentro algo inseguro.
-<pre># groupadd subversion
+# svnadmin create --fs-type fsfs /var/svn-repos/project_wombat
+</pre>
+
+<p>
+Los directorios de los repositorios necesitan los permisos apropiados
+para apache y los demás usuarios. Crearé un grupo y le añadiré los
+usuarios (no haga copiar/pegar aquí). El usuario de apache no lo
+pondremos en el grupo, ya que lo encuentro algo inseguro.
+</p>
+
+<pre>
+# groupadd subversion
 # addgroup john subversion
 # addgroup bert subversion
 # addgroup you subversion
 ...
 # chown -R www-data:subversion /var/svn-repos/*
-# chmod -R 770 /var/svn-repos/*</pre>
-Ahora configuraremos la conexión ssh, en la máquina cliente introduzca los siguientes comandos:
-<pre>$ mkdir ~/.ssh/
+# chmod -R 770 /var/svn-repos/*
+</pre>
+
+<p>
+Ahora configuraremos la conexión ssh, en la máquina cliente introduzca
+los siguientes comandos:
+</p>
+
+<pre>
+$ mkdir ~/.ssh/
 $ cd ~/.ssh/
 $ ssh-keygen -t dsa
-$ cat ~/.ssh/id_dsa.pub | ssh you@example.com "cat - >> ~/.ssh/authorized_keys" </pre>
-El servidor ejemplo.com es donde tenemos instalado Subversion. Por facilidad de uso de ssh puede elegir no usar contraseña con tu clave o usar el agente para mantenerse autenticado. Sino, cada transacción entre la máquina del usuario y el servidor Subversion le obligará a introducir la contraseña (muy molesto). El uso del agente se puede hacer mediante:
-<pre>$ ssh-agent
+$ cat ~/.ssh/id_dsa.pub | ssh you@example.com "cat - >>
+~/.ssh/authorized_keys"
+</pre>
+
+<p>
+El servidor ejemplo.com es donde tenemos instalado Subversion. Por
+facilidad de uso de ssh puede elegir no usar contraseña con tu clave o
+usar el agente para mantenerse autenticado. Sino, cada transacción
+entre la máquina del usuario y el servidor Subversion le obligará a
+introducir la contraseña (muy molesto). El uso del agente se puede
+hacer mediante:
+</p>
+
+<pre>
+$ ssh-agent
 $ ssh-add
-$ ssh usuario@ejemplo.com</pre>
-Ya tenemos todo preparado para usar el repositorio. Lo puede usted probar con esto, hará un import y un checkout:
-<pre>$ mkdir ~/TEMP/
+$ ssh usuario@ejemplo.com
+</pre>
+
+<p>
+Ya tenemos todo preparado para usar el repositorio. Lo puede usted
+probar con esto, hará un import y un checkout:
+</p>
+
+<pre>
+$ mkdir ~/TEMP/
 $ echo "testing svn" > ~/TEMP/testing.txt
 $ svn import -m "importing test over ssh+svn" ~/TEMP/ svn+ssh://example.com/var/svn-repos/project_zen/trunk
-$ svn co svn+ssh://example.com/var/svn-repos/project_zen/trunk testcheckout </pre>
-Como resultado debemos obtener el fichero testing.txt en un directorio llamado <em>testcheckout</em>. En el servidor puede observar los repositorios con <em>svnlook</em>.
-<pre># svnlook tree /var/lib/svn/project_zen/</pre>
-<strong>Configurando el WebDAV de Subversion</strong>
+$ svn co svn+ssh://example.com/var/svn-repos/project_zen/trunk testcheckout
+</pre>
 
-Por lo general el módulo de apache viene configurado, de todas formas puede asegurarse con los siguientes comandos:
-<pre># a2enmod dav
-# a2enmod dav_svn</pre>
-La configuración se hace en el fichero <em>/etc/apache2/mods-available/dav_svn.conf</em>, pero primero debemos crear el fichero de acceso.
-<pre># htpasswd2 -c /etc/apache2/dav_svn.passwd usuario
+<p>
+Como resultado debemos obtener el fichero testing.txt en un directorio
+llamado <em>testcheckout</em>. En el servidor puede observar los
+repositorios con <em>svnlook</em>.
+</p>
+
+<pre>
+# svnlook tree /var/lib/svn/project_zen/
+</pre>
+
+<h3>Configurando el WebDAV de Subversion</h3>
+
+<p>
+Por lo general el módulo de apache viene configurado, de todas formas
+puede asegurarse con los siguientes comandos:
+</p>
+
+<pre>
+# a2enmod dav
+# a2enmod dav_svn
+</pre>
+
+<p>
+La configuración se hace en el fichero
+<em>/etc/apache2/mods-available/dav_svn.conf</em>, pero primero
+debemos crear el fichero de acceso.
+</p>
+
+<pre>
+# htpasswd2 -c /etc/apache2/dav_svn.passwd usuario
 # htpasswd2 -c /etc/apache2/dav_svn.passwd john
-...</pre>
-Este es el contenido de mi fichero /etc/apache2/mods-available/dav_svn.conf:
-<pre>&lt;Location /svn_zen&gt;
+...
+</pre>
+
+<p>
+Este es el contenido de mi fichero
+/etc/apache2/mods-available/dav_svn.conf:
+</p>
+<pre>
+&lt;Location /svn_zen&gt;
 DAV svn
 SVNPath /var/svn-repos/project_zen
 AuthType Basic
@@ -84,31 +183,90 @@ AuthName "Subversion Repository"
 AuthUserFile /etc/apache2/dav_svn.passwd
 Require valid-user
 SSLRequireSSL
-&lt;/Location&gt;</pre>
-Puede comentar la linea <em>SSLRequireSSL</em> sino desea utilizar SSL, pero entonces deberá utilizar <em>http</em> en vez de <em>https</em> en los comandos siguientes. Deberemos reiniciar apache y probar desde la máquina cliente. Importaremos el mismo fichero de prueba en el proyecto wombat.
-<pre># /etc/init.d/apache2 restart
-$ svn import -m "probando sobre https" https://ejemplo.com/svn_wombat ~/TEMP/</pre>
-Usando un navegador web puede visitar <em>https://ejemplo.com/svn_wombat</em> y ver el nuevo archivo. Esta es una vista muy basica del repositorio, pero usando un front-end web como websvn obtendremos una navegación por el repositorio mucho más completa.
+&lt;/Location&gt;
+</pre>
 
-<strong>Instalando Websvn</strong>
+<p>
+Puede comentar la linea <em>SSLRequireSSL</em> sino desea utilizar
+SSL, pero entonces deberá utilizar <em>http</em> en vez de
+<em>https</em> en los comandos siguientes. Deberemos reiniciar apache
+y probar desde la máquina cliente. Importaremos el mismo fichero de
+prueba en el proyecto wombat.
+</p>
 
+<pre>
+# /etc/init.d/apache2 restart
+$ svn import -m "probando sobre https" https://ejemplo.com/svn_wombat ~/TEMP/
+</pre>
+
+<p>
+Usando un navegador web puede visitar
+<em>https://ejemplo.com/svn_wombat</em> y ver el nuevo archivo. Esta
+es una vista muy basica del repositorio, pero usando un front-end web
+como websvn obtendremos una navegación por el repositorio mucho más
+completa.
+</p>
+
+<h3>Instalando Websvn</h3>
+
+<p>
 <em>Paquetes requeridos</em>
+</p>
 
-Para echar a andar websvn necesitamos los siguientes paquetes, los dos te mostrarán pantallas de configuración (se explica en el siguiente párrafo):
-<pre># apt-get install enscript
-# apt-get install websvn</pre>
-Enscript no es obligatorio, pero es necesario para el coloreado de sintaxis en websvn.
+<p>
+Para echar a andar websvn necesitamos los siguientes paquetes, los dos
+te mostrarán pantallas de configuración (se explica en el siguiente
+párrafo):
+</p>
 
+<pre>
+# apt-get install enscript
+# apt-get install websvn
+</pre>
+
+<p>
+Enscript no es obligatorio, pero es necesario para el coloreado de
+sintaxis en websvn.
+</p>
+
+<p>
 <em>Configuración</em>
+</p>
 
-<strong>Enscript</strong> le preguntará por el tamaño del papel, esto es porque enscript es usado también para convertir ficheros ASCII a PostScript. Nosotros lo necesitamos para el coloreado de sintraxis.
+<p>
+<strong>Enscript</strong> le preguntará por el tamaño del papel, esto
+es porque enscript es usado también para convertir ficheros ASCII a
+PostScript. Nosotros lo necesitamos para el coloreado de sintraxis.
+</p>
 
-<strong>Websvn</strong> nos preguntará que servidor queremos configurar, seleccionamos el nuestro y pulsamos intro.
+<p>
+<strong>Websvn</strong> nos preguntará que servidor queremos
+configurar, seleccionamos el nuestro y pulsamos intro.
+</p>
 
-La siguiente pantalla nos preguntará por el directorio del repositorio padre y por los directorios de repositorios específicos, esto determinará que repositorios serán visibles desde websvn. Nosotros sólo introduciremos el repositorio padre (<em>/var/lib/svn</em>), todos los repositorios creados en este directorio serán visibles mediante websvn. Si usted sólo quiere mostrar algunos repositorios específicos introduzca la ruta complete en la segunda pantalla y deje el directorio padre en blanco.
+<p>
+La siguiente pantalla nos preguntará por el directorio del repositorio
+padre y por los directorios de repositorios específicos, esto
+determinará que repositorios serán visibles desde websvn. Nosotros
+sólo introduciremos el repositorio padre (<em>/var/lib/svn</em>),
+todos los repositorios creados en este directorio serán visibles
+mediante websvn. Si usted sólo quiere mostrar algunos repositorios
+específicos introduzca la ruta complete en la segunda pantalla y deje
+el directorio padre en blanco.
+</p>
 
-Como resultado de la configuracion el ficher <em>/etc/websvn/svn_deb_conf.inc</em> será creado. Puede volver a ejecutar las pantallas de configuración del paquete debian mediante <em>dpkg-reconfigure</em>. Aparte, el resto de la configuración de websvn está en el fichero <em>/etc/websvn/config.inc</em>. Este es el contenido de mi fichero con algunas extensiones para el coloreado de sintaxis.
-<pre>&lt; ?php
+<p>
+Como resultado de la configuracion el ficher
+<em>/etc/websvn/svn_deb_conf.inc</em> será creado. Puede volver a
+ejecutar las pantallas de configuración del paquete debian mediante
+<em>dpkg-reconfigure</em>. Aparte, el resto de la configuración de
+websvn está en el fichero <em>/etc/websvn/config.inc</em>. Este es el
+contenido de mi fichero con algunas extensiones para el coloreado de
+sintaxis.
+</p>
+
+<pre>
+&lt; ?php
 // --- LOOK AND FEEL ---
 //
 // Uncomment ONLY the display file that you want.
@@ -199,20 +357,35 @@ php_flag magic_quotes_gpc Off
 php_flag track_vars On
 &lt;/IfModule&gt;
 &lt;/Location&gt;
-&lt;/VirtualHost&gt;</pre>
-<strong>N.T.</strong>: Fijese en el <em>mod_php4.c</em> puede que usted esté utilizando otra versión diferente.
+&lt;/VirtualHost&gt;
+</pre>
 
-Reinicie apache y eche un vistazo al resultado en <em>https://svn.ejemplo.com/</em>.
+<p>
+<strong>N.T.</strong>: Fijese en el <em>mod_php4.c</em> puede que
+usted esté utilizando otra versión diferente.
+</p>
 
-<strong>Enlaces de interes sobre Subversion</strong>
+<p>
+Reinicie apache y eche un vistazo al resultado en
+<em>https://svn.ejemplo.com/</em>.
+</p>
 
+<h3>Enlaces de interes sobre Subversion</h3>
+
+<p>
 <em>Más información</em>
+</p>
+
 <ul>
 	<li><a href="http://subversion.tigris.org">Sitio oficial de subversion</a></li>
 	<li><a href="http://svnbook.red-bean.com/">Version control with Subversion</a>, libro libre on-line</li>
 	<li><a href="http://websvn.tigris.org">websvn</a></li>
 </ul>
+
+<p>
 <em>Clientes subversion</em>
+</p>
+
 <ul>
 	<li><a href="http://subclipse.tigris.org">Subclipse</a></li>
 	<li><a href="http://rapidsvn.tigris.org">RapidSVN</a></li>
@@ -221,4 +394,9 @@ Reinicie apache y eche un vistazo al resultado en <em>https://svn.ejemplo.com/</
 	<li><a href="http://docs.blacktree.com/quicksilver/plug-ins/subversion">Quicksilver plugin</a> (Mac OS X)</li>
 	<li><a href="http://tortoisesvn.tigris.org/">TortoiseSVN</a> (Windows)</li>
 </ul>
-Espero que este howto te haya sido útil. Esta no es una configuracion perfecta, pero espero que te ayude a utilizar Subversion. Por favor, siente con toda libertad para enviar comentarios y correcciones.
+
+<p>
+Espero que este howto te haya sido útil. Esta no es una configuracion
+perfecta, pero espero que te ayude a utilizar Subversion. Por favor,
+siente con toda libertad para enviar comentarios y correcciones.
+</p>

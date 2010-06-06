@@ -1,25 +1,47 @@
-Manual traducido de: <a href="http://www.nmedia.net/%7Echris/soekris/install.html">http://www.nmedia.net/~chris/soekris/install.html</a>
 
-En este manual se muestra como instalar <a href="http://www.openbsd.org">OpenBSD </a>en un <a href="http://www.soekris.com/net4501.htm">Soekris NET4501</a> sobre una compat flash, en este caso para hacer las funciones de firewall y establecer tuneles IPSEC.
+<p>
+Manual traducido de: <a
+href="http://www.nmedia.net/%7Echris/soekris/install.html">http://www.nmedia.net/~chris/soekris/install.html</a>
+</p>
+
+<p>
+En este manual se muestra como instalar <a
+href="http://www.openbsd.org">OpenBSD </a>en un <a
+href="http://www.soekris.com/net4501.htm">Soekris NET4501</a> sobre
+una compat flash, en este caso para hacer las funciones de firewall y
+establecer tuneles IPSEC.
+</p>
 
 <!--break-->
 
-<strong><big>Instalación del NET4501</big></strong>
+<h2>Instalación del NET4501</h2>
 
-<strong>1. Durante el arranque del Soekris (con la flash insertada), vera un mensaje similar a este:</strong>
+<h3>1. Durante el arranque del Soekris (con la flash insertada),
+vera un mensaje similar a este:</h3>
 
 <pre>
 0064 Mbyte Memory                   CPU 80486 133 MHz
 Pri Mas  ATA_FLASH                  LBA 489-4-32   31 Mbyte
 </pre>
 
-En el ejemplo anterior, 489-4-32 representa los Cilindros, PistarPorCilindro(Cabezas) y SectoresPorPista, los valores C-H-S.
+<p>
+En el ejemplo anterior, 489-4-32 representa los Cilindros,
+PistarPorCilindro(Cabezas) y SectoresPorPista, los valores C-H-S.
+</p>
 
-Conecte su consola serie a la caja del Soekris (19200 baud). Introduzca la tarjeta flash en el Soekris, enciendalo, y anote los valores C-H-S de su sesión serie. Recuerdelos ya que Flashdist le preguntará por ellos más adelante.
+<p>
+Conecte su consola serie a la caja del Soekris (19200
+baud). Introduzca la tarjeta flash en el Soekris, enciendalo, y anote
+los valores C-H-S de su sesión serie. Recuerdelos ya que Flashdist le
+preguntará por ellos más adelante.
+</p>
 
-(Si su Soekris no muestra esos valores, siga las instrucciones de la web de Soekris para actualizar de la 1.15 a una BIOS más moderna)
+<p>
+(Si su Soekris no muestra esos valores, siga las instrucciones de la
+web de Soekris para actualizar de la 1.15 a una BIOS más moderna)
+</p>
 
-<strong>2. Desempaquete base4X.tgz y etc4X.tgz en un directorio, por ejemplo, /tmp/openbsd.</strong>
+<h3>2. Desempaquete base4X.tgz y etc4X.tgz en un directorio, por ejemplo, /tmp/openbsd.</h3>
 
 (Asegúrese de utilizar la opción <strong>p</strong> con tar o los ficheros no serán extraídos con los permisos adecuados y su instalación (<em>al menos sshd y login</em>) no funcionará correctamente!).
 
@@ -32,7 +54,7 @@ tar xzpf /path/to/base40.tgz
 tar xzpf /path/to/etc40.tgz
 </pre>
 
-<strong>3. Compile el kernel del NET4501</strong>
+<h3>3. Compile el kernel del NET4501</h3>
 
 <pre>
 cp /path/to/NET4501 /usr/src/sys/arch/i386/conf/NET4501
@@ -42,9 +64,19 @@ cd ../compile/NET4501
 make
 </pre>
 
-Por supuesto, que cualquier kernel que compile debe estar construido con la misma versión de código fuente que está instalando en el Soekris. O en caso de que esté usando un snapshot para instalar desde el, intente construir las últimas fuentes cerradas.
+<p>
+Por supuesto, que cualquier kernel que compile debe estar construido
+con la misma versión de código fuente que está instalando en el
+Soekris. O en caso de que esté usando un snapshot para instalar desde
+el, intente construir las últimas fuentes cerradas.
+</p>
 
-<strong>4. Edite el fichero rc en el directorio de flashdist para añadir sus opciones.</strong> (Deberá cambiar por lo menos las direcciones IP, la puerta de enlace, el hostname, etc...)
+<h3>4. Edite el fichero rc en el directorio de flashdist para añadir
+sus opciones.</h3> 
+
+<p>
+(Deberá cambiar por lo menos las direcciones IP, la puerta de enlace, el hostname, etc...)
+</p>
 
 <pre>
 tar xvf flashdist.tar
@@ -52,89 +84,147 @@ cd flashdist
 vi rc
 </pre>
 
-<strong>5. Use flashdist para instalar en su tarjeta flash</strong> (se asume que está utilizando un adaptador USB-CF con una flash en sd2). Asegúrese de ejecutar flashdist.sh desde el directorio flashdist, ya que sino podría acceder a otros ficheros.
+<h3>5. Use flashdist para instalar en su tarjeta flash</h3>
+
+<p>(se asume que está utilizando un adaptador USB-CF con una flash en
+sd2). Asegúrese de ejecutar flashdist.sh desde el directorio
+flashdist, ya que sino podría acceder a otros ficheros.
+</p>
 
 <pre>
 ./flashdist.sh sd2 flashsmall.txt /usr/src/sys/arch/i386/compile/NET4501/bsd /tmp/openbsd
 </pre>
 
+<p>
 O, si quiere instalar todo (/etc, /usr) desde su estación de trabajo.
+</p>
 
 <pre>
 ./flashdist.sh sd2 flashsmall.txt /bsd /
 </pre>
 
-<strong>6. Edite /etc/rc y configure sus parámetros de red (ips, rutas, etc)</strong>. Active ntpd si quiere usarlo (recomendado). Active dhcpd si lo necesita. Edite ntpd.conf, dhcpd.conf, pf.conf, etc... Si está usando nsh puede configurar las rutas y las interfaces directamente dentro de nshrc o a través del CLI nsh.
+<h3>6. Edite /etc/rc y configure sus parámetros de red (ips, rutas,
+etc)</h3>.
 
-Ya debería tener una flash arrancable para su NET4501. Si tiene problemas arrancando, quizás necesite seguir las instrucciones del inicio del script para obtener la geometría correcta.
+<p>
+Active ntpd si quiere usarlo (recomendado). Active dhcpd si lo
+necesita. Edite ntpd.conf, dhcpd.conf, pf.conf, etc... Si está usando
+nsh puede configurar las rutas y las interfaces directamente dentro de
+nshrc o a través del CLI nsh.
+</p>
 
-<big><strong>Modificando la flash después de arrancar</strong></big>
+<p>
+Ya debería tener una flash arrancable para su NET4501. Si tiene
+problemas arrancando, quizás necesite seguir las instrucciones del
+inicio del script para obtener la geometría correcta.
+</p>
 
-Cuando esté logueado la consola serie del net 4501, puede usar vi y otras aplicaciones para configurar su tipo de terminal, como por ejemplo:
+<h2>Modificando la flash después de arrancar</h2>
+
+<p>
+Cuando esté logueado la consola serie del net 4501, puede usar vi y
+otras aplicaciones para configurar su tipo de terminal, como por
+ejemplo:
+</p>
 
 <pre>
 export TERM=vt220
 </pre>
 
-Si quiere hacer cambios en el dispositivo de solo lectura mientras esta logueado en el, haga lo siguiente:
+<p>
+Si quiere hacer cambios en el dispositivo de solo lectura mientras
+esta logueado en el, haga lo siguiente:
+</p>
 
 <pre>
 mount -o rw,noatime /dev/wd0a /
 </pre>
 
+<p>
 Haga sus cambios, y después vuelva a montarlo en modo sólo lectura:
+</p>
 
 <pre>
 mount -o ro /dev/wd0a /
 </pre>
 
-<big><strong>Creando una imagen de disco virtual con flashdist</strong></big>
+<h2>Creando una imagen de disco virtual con flashdist</h2>
 
-Si quiere utilizar flashdist para crear una imagen de disco, en vez de trabajar sobre la flash, use vnconfig(8). <em>Este método solo funciona si especifica la geometría a flashdist manualmente</em>. Primero necesita crear una imagen del tamaño de la flash:
+<p>
+Si quiere utilizar flashdist para crear una imagen de disco, en vez de
+trabajar sobre la flash, use vnconfig(8). <em>Este método solo
+funciona si especifica la geometría a flashdist
+manualmente</em>. Primero necesita crear una imagen del tamaño de la
+flash:
+</p>
 
 <pre>
 dd if=/dev/zero of=flashimg bs=512 count=125440
 </pre>
 
-Donde <em>bs</em>, el blocksize, es igual a los bytes por sector usados en la flash (casi siempre 512), y <em>count</em> es el número total de sectores. En este ejemplo, el número total de sectores es 125440, pero por supuesto, es diferente para cada tipo de flash o disco duro. Se calcula con C*H*S, donde C es Cilindros, H es Cabezas (pistas por cilindro), y S son Sectores por pista.
+<p>
+Donde <em>bs</em>, el blocksize, es igual a los bytes por sector
+usados en la flash (casi siempre 512), y <em>count</em> es el número
+total de sectores. En este ejemplo, el número total de sectores es
+125440, pero por supuesto, es diferente para cada tipo de flash o
+disco duro. Se calcula con C*H*S, donde C es Cilindros, H es Cabezas
+(pistas por cilindro), y S son Sectores por pista.
+</p>
 
-Una vez tenga la imagen de disco, necesita que se comporte como un disco normal.
+<p>
+Una vez tenga la imagen de disco, necesita que se comporte como un
+disco normal.
+</p>
 
 <pre>
 vnconfig -c svnd0 flashimg
 </pre>
 
-Ahora puede usar el dispositivo svnd0 con flashdist, en vez de sd0 u otro disco del sistema. Cuando esté preparado para instalarlo en la flash, necesita desconfigurarla antes de usarla.
+<p>
+Ahora puede usar el dispositivo svnd0 con flashdist, en vez de sd0 u
+otro disco del sistema. Cuando esté preparado para instalarlo en la
+flash, necesita desconfigurarla antes de usarla.
+</p>
 
 <pre>
 vnconfig -u svnd0
 </pre>
 
-Ahora el fichero 'flashimg' es tu imagen de disco y está preparada para ser escrita en la flash.
+<p>
+Ahora el fichero 'flashimg' es tu imagen de disco y está preparada
+para ser escrita en la flash.
+</p>
 
 <pre>
 dd if=flashimg of=/dev/sd0c
 </pre>
 
-<big><strong>Instalando NSH</strong></big>
+<h2>Instalando NSH</strong></h2>
 
-NSH puede ser instalado fácilmente. Simplemente desempaquete nsh bajo el directorio de flashdist.
+<p>
+NSH puede ser instalado fácilmente. Simplemente desempaquete nsh bajo
+el directorio de flashdist.
+</p>
 
 <pre>
 cd flashdist-XXXXXXXX
 tar xvf ~/nsh-XXXXXXXX.tar
 </pre>
 
+<p>
 Ahora, construya NSH.
+</p>
 
 <pre>
 cd nsh
 make
 </pre>
 
+<p>
 Con NSH compilado, flashdist lo instalará automáticamente.
+</p>
 
-<strong>Enlaces</strong>
+<h3>Enlaces</h3>
 <ul>
 	<li><a href="http://www.nmedia.net/~chris/soekris/">Flashdist</a></li>
 	<li><a href="http://www.soekris.com/">Soekris</a></li>

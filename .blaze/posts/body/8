@@ -1,40 +1,114 @@
-Artículo traducido de:  <a href="http://michiel.vanbaak.info/page/soekrisobsdcarp.htm">http://michiel.vanbaak.info/page/soekrisobsdcarp.htm</a>
 
-Este documento describe la instalación de un soekris net4801 con OpenBSD como firewall redundante. Primero describiré la instalación básica de OpenBSD en el net4801. Después explicaré como instalar las dos cajas como firewall redundante a prueba de errores. Este no es el único método para hacer este tipo de instalación, pero es el que nos ha funcionado.
+<p>
+Artículo traducido de:  <a
+href="http://michiel.vanbaak.info/page/soekrisobsdcarp.htm">http://michiel.vanbaak.info/page/soekrisobsdcarp.htm</a>
+</p>
+
+<p>
+Este documento describe la instalación de un soekris net4801 con
+OpenBSD como firewall redundante. Primero describiré la instalación
+básica de OpenBSD en el net4801. Después explicaré como instalar las
+dos cajas como firewall redundante a prueba de errores. Este no es el
+único método para hacer este tipo de instalación, pero es el que nos
+ha funcionado.
+</p>
 
 <!--break-->
 
-<strong>Acerca de CARP y pfsync</strong>
+<h3>Acerca de CARP y pfsync</h3>
 
-En la mayoría de las redes, el firewall es un único punto de fallo. Cuando el firewall cae, los usuarios de dentro no pueden navegar por la web, el servidor web queda inaccesible para el resto del mundo,  y  el email queda parado. Desde la versión 3.5, OpenBSD ha introducido unos cuantos componentes que pueden ser usados para resolver este problema, colocando dos firewalls en paralelo. Todo tráfico pasa por el firewall primario; cuando éste falla el firewall de backup asume la identidad del firewall primario, y continua donde éste lo dejó. Las conexiones existentes son preservadas, y el trafico de la red continúa como si nada hubiera pasado.
+<p>
+En la mayoría de las redes, el firewall es un único punto de
+fallo. Cuando el firewall cae, los usuarios de dentro no pueden
+navegar por la web, el servidor web queda inaccesible para el resto
+del mundo,  y  el email queda parado. Desde la versión 3.5, OpenBSD ha
+introducido unos cuantos componentes que pueden ser usados para
+resolver este problema, colocando dos firewalls en paralelo. Todo
+tráfico pasa por el firewall primario; cuando éste falla el firewall
+de backup asume la identidad del firewall primario, y continua donde
+éste lo dejó. Las conexiones existentes son preservadas, y el trafico
+de la red continúa como si nada hubiera pasado.
+</p>
 
-<img src="http://www.pastelero.net/wp-content/openbsdcarp.jpg" alt="Soekris net4801 OpenBSD 4.0 CARP" />
+<p>
+<img src="%root%static-files/openbsdcarp.jpg" alt="Soekris net4801 OpenBSD 4.0 CARP" />
+</p>
 
+<p>
 Usaremos esto para proteger mejor nuesta plataforma de hosting.
+</p>
 
-<strong>Las herramientas</strong>
+<h3>Las herramientas</h3>
 
-Los dos componentes principales que ofrece OpenBSD son CARP (the Common Address Redundancy Protocol), que permite a un host backup asumir la identidad del primero, y pfsync, que nos asegura que el estado del firewall está sincronizado para que el backup pueda retomar todo exactamente donde el el maestro dejó y no haya perdida de conexiones.
+<p>
+Los dos componentes principales que ofrece OpenBSD son CARP (the
+Common Address Redundancy Protocol), que permite a un host backup
+asumir la identidad del primero, y pfsync, que nos asegura que el
+estado del firewall está sincronizado para que el backup pueda retomar
+todo exactamente donde el el maestro dejó y no haya perdida de
+conexiones.
+</p>
 
-<strong>CARP</strong>
+<h3>CARP</h3>
 
-El Common Address Redundancy Protocol controla los fallos en la intersección de las capas 2 y 3 del modelo OSI (capa enlace y capa IP).*
+<p>
+El Common Address Redundancy Protocol controla los fallos en la
+intersección de las capas 2 y 3 del modelo OSI (capa enlace y capa
+IP).*
+</p>
 
-El maestro de la dirección manda mensajes de aviso CARP via multicast usando el protocolo CARP (protocolo IP 112) de forma regular, y el host backup escucha estos avisos. Si los avisos se detienen, el host backup es advertido. La frecuencia de los avisos es configurable, y el host advertido más frecuentemente será el que se volverá master en caso de fallo.
+<p>
+El maestro de la dirección manda mensajes de aviso CARP via multicast
+usando el protocolo CARP (protocolo IP 112) de forma regular, y el
+host backup escucha estos avisos. Si los avisos se detienen, el host
+backup es advertido. La frecuencia de los avisos es configurable, y el
+host advertido más frecuentemente será el que se volverá master en
+caso de fallo.
+</p>
 
-<strong>pfsync</strong>
+<h3>pfsync</h3>
 
-pfsync transfiere los mensajes de estado de inserciones, actualizaciones y borrados entre los firewalls. Cada firewall envia esos mensajes via multicast por la interfaz especificada, usando el protocolo PFSYNC (protocolo 240 IP). También escuchan en esa interfaz mensajes similares de otros firewalls y los importan en la tabla local de estado.
+<p>
+pfsync transfiere los mensajes de estado de inserciones,
+actualizaciones y borrados entre los firewalls. Cada firewall envia
+esos mensajes via multicast por la interfaz especificada, usando el
+protocolo PFSYNC (protocolo 240 IP). También escuchan en esa interfaz
+mensajes similares de otros firewalls y los importan en la tabla local
+de estado.
+</p>
 
-Para garantizar que pfsync conoce el volumen del paquete y la latencia requerida, la implementación inicial no proporciona autentificación. Un atacante con acceso a la subred local (capa enlace) usada para el tráfico pfsync puede fácilmente, añandir, cambiar o borrar estados de los firewalls. Es posible usar pfsync en una red "real", pero a causa de los riesgos de seguridad, es altamente recomendable que ésta sea una red dedicada y segura para pfsync. Esto es tan simple como usar un cable cruzado entre interfaces de los dos firewalls.
+<p>
+Para garantizar que pfsync conoce el volumen del paquete y la latencia
+requerida, la implementación inicial no proporciona
+autentificación. Un atacante con acceso a la subred local (capa
+enlace) usada para el tráfico pfsync puede fácilmente, añandir,
+cambiar o borrar estados de los firewalls. Es posible usar pfsync en
+una red "real", pero a causa de los riesgos de seguridad, es altamente
+recomendable que ésta sea una red dedicada y segura para pfsync. Esto
+es tan simple como usar un cable cruzado entre interfaces de los dos
+firewalls.
+</p>
 
-<strong>Instalar OpenBSD 4.0</strong>
+<h3>Instalar OpenBSD 4.0</h3>
 
-Vaya a la documentalción de <a href="http://www.openbsd.org">OpenBSD</a> para saber como hacer esto.
+<p>
+Vaya a la documentalción de <a
+href="http://www.openbsd.org">OpenBSD</a> para saber como hacer esto.
+</p>
 
-Un par de cosas difieren de esa descripción.  El soekris funciona con un disco CF. Asi que no necesita partición swap. El instalador no continuará si no tiene partición swap. Así que crearemos una con tamaño 1.
+<p>
+Un par de cosas difieren de esa descripción.  El soekris funciona con
+un disco CF. Asi que no necesita partición swap. El instalador no
+continuará si no tiene partición swap. Así que crearemos una con
+tamaño 1.
+</p>
 
-Además todo será montado como solo lectura, asi que necesitamos dividir nuestro disco en unas cuantas particiones. Esta configuración se usarán 3.
+<p>
+Además todo será montado como solo lectura, asi que necesitamos
+dividir nuestro disco en unas cuantas particiones. Esta configuración
+se usarán 3.
+</p>
+
 <pre>
 # disklabel wd0
 # Inside MBR partition 3: type A6 start 63 size 2046177
@@ -62,26 +136,62 @@ drivedata: 0
    a:       2016945            63  4.2BSD   2048 16384  328 # Cyl     0*-  2000
    b:             1       2017008    swap                   # Cyl  2001 -  2001*
    c:       2046240             0  unused      0     0      # Cyl     0 -  2029
-   d:         29231       2017009  4.2BSD   2048 16384   28 # Cyl  2001*-  2029</pre>
-La partición <em>d</em> se usa para guardar los archivos de configuración como <em>hostname.if</em> y <em>pf.conf</em>. Es usted libre de dejarlos en <em>/etc</em> pero así es como lo hicimos nosotros.
+   d:         29231       2017009  4.2BSD   2048 16384   28 # Cyl  2001*-  2029
+</pre>
 
+<p>
+La partición <em>d</em> se usa para guardar los archivos de
+configuración como <em>hostname.if</em> y <em>pf.conf</em>. Es usted
+libre de dejarlos en <em>/etc</em> pero así es como lo hicimos
+nosotros.
+</p>
+
+<p>
 Cuando se le pregunte que sets instalar, teclee:
-<pre>-*
+</p>
+
+<pre>
+-*
 +bsd
 +base40.tgz
 +etc40.tgz
-done</pre>
-Cuando todo haya sido instalado el instalador le pedirá que apague el sistema. No intente hacerse listo, hagale caso.
+done
+</pre>
 
-<strong>Configuración inicial del sistema</strong>
+<p>
+Cuando todo haya sido instalado el instalador le pedirá que apague el
+sistema. No intente hacerse listo, hagale caso.
+</p>
 
-Arranque en <em>single user mode</em>. Cuando el prompt de boot de OpenBSD aparezca escriba <em>boot -s</em>. El sistema arrancará y preguntará por unsa shell. Pulse intro para aceptar el <em>sh</em> por defecto.
+<h3>Configuración inicial del sistema</h3>
 
-Ahora vamos a configurar el sistema de ficheros en memoria. Haremos esto porque la Compact Flash es lenta y fallará a menudo cuando haya muchas escrituras en ella. Primero monte el sistema de ficheros raiz y cree el raiz del sistema de ficheros en memoria:
-<pre># mount -o rw /
-# mkdir /mfs</pre>
-Ahora modifique <em>/etc/rc</em> para configurar y llenar <em>/mfs</em>. Añadiremos las siguientes lineas después de <em>rm -f /flashboot</em>. La linea 203 en la instalación por defecto de 4.0.
-<pre># mfs related stuff
+<p>
+Arranque en <em>single user mode</em>. Cuando el prompt de boot de
+OpenBSD aparezca escriba <em>boot -s</em>. El sistema arrancará y
+preguntará por unsa shell. Pulse intro para aceptar el <em>sh</em> por
+defecto.
+</p>
+
+<p>
+Ahora vamos a configurar el sistema de ficheros en memoria. Haremos
+esto porque la Compact Flash es lenta y fallará a menudo cuando haya
+muchas escrituras en ella. Primero monte el sistema de ficheros raiz y
+cree el raiz del sistema de ficheros en memoria:
+</p>
+
+<pre>
+# mount -o rw /
+# mkdir /mfs
+</pre>
+
+<p>
+Ahora modifique <em>/etc/rc</em> para configurar y llenar
+<em>/mfs</em>. Añadiremos las siguientes lineas después de <em>rm -f
+/flashboot</em>. La linea 203 en la instalación por defecto de 4.0.
+</p>
+
+<pre>
+# mfs related stuff
 echo 'mfs: mounting /mfs...'
 mount_mfs -s 16384 /dev/wd0b /mfs
 mkdir -p /mfs/var/run
@@ -90,11 +200,22 @@ chmod 1777 /mfs/var/tmp
 cp -Rp /var/log.template /mfs/var/log
 cp -Rp /var/spool/mqueue /mfs/mqueue
 cp -Rp /var/spool/clientmqueue /mfs/clientmqueue
-cp -Rp /var/mail.template /mfs/mail</pre>
-Edite <em>/etc/mail/sendmail.cf</em> y <em>/etc/mail/submit.cf</em> y cambie las entradas para <em>clientmqueue</em> y <em>mqueue</em> para que apunten a <em>/mfs/{clientmqueue,mqueue}</em>
+cp -Rp /var/mail.template /mfs/mail
+</pre>
 
-Ahora moveremos algunos directorios y crearemos enlaces simbólicos a <em>/mfs</em>.
-<pre># mv /var/log /var/log.template
+<p>
+Edite <em>/etc/mail/sendmail.cf</em> y <em>/etc/mail/submit.cf</em> y
+cambie las entradas para <em>clientmqueue</em> y <em>mqueue</em> para
+que apunten a <em>/mfs/{clientmqueue,mqueue}</em>
+</p>
+
+<p>
+Ahora moveremos algunos directorios y crearemos enlaces simbólicos a
+<em>/mfs</em>.
+</p>
+
+<pre>
+# mv /var/log /var/log.template
 # mv /var/mail /var/mail.template
 # rm -rf /tmp
 # rm -rf /var/tmp
@@ -103,65 +224,153 @@ Ahora moveremos algunos directorios y crearemos enlaces simbólicos a <em>/mfs</
 # ln -s /mfs/var/tmp /var/tmp
 # ln -s /mfs/var/log /var/log
 # ln -s /mfs/var/run /var/run
-# ln -s /mfs/mail /var/mail</pre>
+# ln -s /mfs/mail /var/mail
+</pre>
+
+<p>
 Ahora estamos preparados para reiniciar nuestro sistema.
+</p>
 
-Una vez que el sistema arranque y todo funcione bien podemos modificar /etc/fstab para montar el sistema de ficheros raiz en modo solo lectura:
-<pre>/dev/wd0a / ffs ro,noatime 1 1</pre>
-La proxima vez que arranque el sistema, todo sera sólo lectura excepto <em>/mfs</em>
+<p>
+Una vez que el sistema arranque y todo funcione bien podemos modificar
+/etc/fstab para montar el sistema de ficheros raiz en modo solo
+lectura:
+</p>
 
-¿Recuerda la partición <em>d</em>? Se usará para los archivos de configuración que cambien a menudo. Esta pequeña partición se montará como lectura escritura.
-<pre># mkdir /mnt/vanbaak
+<pre>
+/dev/wd0a / ffs ro,noatime 1 1
+</pre>
+
+<p>
+La proxima vez que arranque el sistema, todo sera sólo lectura excepto
+<em>/mfs</em>
+</p>
+
+<p>
+¿Recuerda la partición <em>d</em>? Se usará para los archivos de
+configuración que cambien a menudo. Esta pequeña partición se montará
+como lectura escritura.
+</p>
+
+<pre>
+# mkdir /mnt/vanbaak
 # mount /dev/wd0d /mnt/vanbaak
 # mkdir /mnt/vanbaak/confs
 # mv /etc/hostname.* /mnt/vanbaak/confs/
 # mv /etc/pf.conf /mnt/vanbaak/confs/
 # cd /etc
 # ln -s /mnt/vanbaak/confs/hostname.*
-# ln -s /mnt/vanbaak/confs/pf.conf</pre>
-Ahora edite <em>/etc/fstab</em> y añada este punto de montaje. El archivo debería parecerse a esto:
-<pre>/dev/wd0a / ffs ro,noatime 1 1
-/dev/wd0d /mnt/vanbaak ffs rw,nodev,nosuid,noatime 1 2</pre>
-Reinicie una vez más y su sistema estará listo para ser configurado como un firewall redundante.
+# ln -s /mnt/vanbaak/confs/pf.conf
+</pre>
 
+<p>
+Ahora edite <em>/etc/fstab</em> y añada este punto de montaje. El
+archivo debería parecerse a esto:
+</p>
+
+<pre>
+/dev/wd0a / ffs ro,noatime 1 1
+/dev/wd0d /mnt/vanbaak ffs rw,nodev,nosuid,noatime 1 2
+</pre>
+
+<p>
+Reinicie una vez más y su sistema estará listo para ser configurado como un firewall redundante.
+</p>
+
+<p>
 Un <em>df -h</em> del sistema instalado debería parecerse a esto:
-<pre># df -h
+</p>
+
+<pre>
+# df -h
 Filesystem     Size    Used   Avail Capacity  Mounted on
 /dev/wd0a      967M    171M    748M    19%    /
 /dev/wd0d     13.8M   16.0K   13.1M     0%    /mnt/vanbaak
-mfs:19171      7.7M    150K    7.2M     2%    /mfs</pre>
-<strong>Configurar CARP</strong>
+mfs:19171      7.7M    150K    7.2M     2%    /mfs
+</pre>
 
-Antes de que use CARP, debemos habilitarlo en <em>/etc/sysctl.conf</em>. Añada las siguientes lineas:
-<pre>net.inet.carp.allow=1
-net.inet.carp.preempt=1</pre>
-Ahora puede reiniciar para activarlo o ejecutar los siguientes comandos:
-<pre># sysctl -w net.inet.carp.allow=1
-# sysctl -w net.inet.carp.preempt=1</pre>
-Ahora necesitamos reescribir la configuración de la red. El soekris viene con 3 interfaces: sis0, sis1 y sis2.
+<h3>Configurar CARP</h3>
+
+<p>
+Antes de que use CARP, debemos habilitarlo en
+<em>/etc/sysctl.conf</em>. Añada las siguientes lineas:
+</p>
+
+<pre>
+net.inet.carp.allow=1
+net.inet.carp.preempt=1
+</pre>
+
+<p>
+Ahora puede reiniciar para activarlo o ejecutar los siguientes
+comandos:
+</p>
+
+<pre>
+# sysctl -w net.inet.carp.allow=1
+# sysctl -w net.inet.carp.preempt=1
+</pre>
+
+<p>
+Ahora necesitamos reescribir la configuración de la red. El soekris
+viene con 3 interfaces: sis0, sis1 y sis2.
+</p>
+
 <ul>
 	<li><em>sis0</em> será conectada al mundo exterior.</li>
 	<li><em>sis1</em> será conectada a la red interna.</li>
 	<li><em>sis2</em> será usada para compartir la información de estado. Vea Configurar pfsync.</li>
 </ul>
-Las ips virtuales serán puestas por CARP. Las dos, la parte interna y la parte externa necesitan una ip virtual asi que configuraremos dos interfaces CARP.
+
+<p>
+Las ips virtuales serán puestas por CARP. Las dos, la parte interna y
+la parte externa necesitan una ip virtual asi que configuraremos dos
+interfaces CARP.
+</p>
+
 <ul>
 	<li><em>carp1</em> en el exterior usando sis0 como interfaz física.</li>
 	<li><em>carp2</em> en el interior usando sis1 como interfaz física.</li>
 </ul>
-Para crear una interfaz carp puede usar ifconfig para configurarla en un sistema arrancado. Después veremos que ficheros debemos crear para configurar CARP durante el arranque del sistema.
 
+<p>
+Para crear una interfaz carp puede usar ifconfig para configurarla en
+un sistema arrancado. Después veremos que ficheros debemos crear para
+configurar CARP durante el arranque del sistema.
+</p>
+
+<p>
 Una interfaz CARP se crea de la siguiente manera:
-<pre># ifconfig sis0 ip.address netmask some.mask
-# ifconfig carp1 create
-# ifconfig carp1 vhid 1 carpdev sis0 pass somepass virtual.ip.address netmask some.mask</pre>
-En el segundo, el host backup, los comandos serían:
-<pre># ifconfig sis0 ip.address+1 netmask some.mask
-# ifconfig carp1 create
-# ifconfig carp1 vhid 1 carpdev sis0 pass somepass advskew 100 virtual.ip.address netmask some.mask</pre>
-La palabra clave es advskew. Cuanto más alto sea, menor prioridad tiene el firewall. La maquina con el advskew mas bajo será el firewall maestro.
+</p>
 
-Para nuestra configuración tomaré las siguientes direcciones ip. Notese que son usadas para pruebas. Reemplace la información de las ips con su información real.
+<pre>
+# ifconfig sis0 ip.address netmask some.mask
+# ifconfig carp1 create
+# ifconfig carp1 vhid 1 carpdev sis0 pass somepass virtual.ip.address netmask some.mask
+</pre>
+
+<p>
+En el segundo, el host backup, los comandos serían:
+</p>
+
+<pre>
+# ifconfig sis0 ip.address+1 netmask some.mask
+# ifconfig carp1 create
+# ifconfig carp1 vhid 1 carpdev sis0 pass somepass advskew 100 virtual.ip.address netmask some.mask
+</pre>
+
+<p>
+La palabra clave es advskew. Cuanto más alto sea, menor prioridad
+tiene el firewall. La maquina con el advskew mas bajo será el firewall
+maestro.
+</p>
+
+<p>
+Para nuestra configuración tomaré las siguientes direcciones
+ip. Notese que son usadas para pruebas. Reemplace la información de
+las ips con su información real.
+</p>
+
 <pre>
          +----| WAN/Internet |----+
          |                        |
@@ -171,10 +380,17 @@ Para nuestra configuración tomaré las siguientes direcciones ip. Notese que so
 +------------+                  +------------+
      sis1|                        |sis1
          |                        |
-      ---+-------Shared LAN-------+---</pre>
-Soekris001 es el firewall maestro.
+      ---+-------Shared LAN-------+---
+</pre>
 
+<p>
+Soekris001 es el firewall maestro.
+</p>
+
+<p>
 Soekris002 es el firewall de backup a prueba de fallos.
+</p>
+
 <ul>
 	<li>soekris001 sis0: 192.168.2.14</li>
 	<li>soekris001 sis1: 10.0.0.14</li>
@@ -185,29 +401,61 @@ Soekris002 es el firewall de backup a prueba de fallos.
 	<li>Ip compartida externa: 192.168.2.13</li>
 	<li>Ip compartida interna: 10.0.0.13</li>
 </ul>
+
+<p>
 Configuración en el soekris001:
-<pre># ifconfig sis0 192.168.2.14 netmask 255.255.255.0 up
+</p>
+
+<pre>
+# ifconfig sis0 192.168.2.14 netmask 255.255.255.0 up
 # ifconfig sis1 10.0.0.14 netmask 255.255.255.0 up
 # ifconfig sis2 172.14.0.14 netmask 255.255.255.0 up
 # ifconfig carp1 create
 # ifconfig carp1 vhid 1 carpdev sis0 pass somethingsecret 192.168.2.13 netmask 255.255.255.0
 # ifconfig carp2 create
-# ifconfig carp2 vhid 2 carpdev sis1 pass somethingother 10.0.0.13 netmask 255.255.255.0</pre>
-Asegurese de poner lo siguiente en la parte superior de su <em>/etc/pf.conf</em>.
-<pre>pass out on { sis0, sis1 } proto carp keep state</pre>
+# ifconfig carp2 vhid 2 carpdev sis1 pass somethingother 10.0.0.13 netmask 255.255.255.0
+</pre>
+
+<p>
+Asegurese de poner lo siguiente en la parte superior de su
+<em>/etc/pf.conf</em>.
+</p>
+
+<pre>
+pass out on { sis0, sis1 } proto carp keep state
+</pre>
+
+<p>
 Configuración en el soekris002:
-<pre># ifconfig sis0 192.168.2.15 netmask 255.255.255.0 up
+</p>
+
+<pre>
+# ifconfig sis0 192.168.2.15 netmask 255.255.255.0 up
 # ifconfig sis1 10.0.0.15 netmask 255.255.255.0 up
 # ifconfig sis2 172.14.0.15 netmask 255.255.255.0 up
 # ifconfig carp1 create
 # ifconfig carp1 vhid 1 carpdev sis0 pass somethingsecret advskew 100 192.168.2.13 netmask 255.255.255.0
 # ifconfig carp2 create
-# ifconfig carp2 vhid 2 carpdev sis1 pass somethingother advskew 100 10.0.0.13 netmask 255.255.255.0</pre>
-Asegurese de poner lo siguiente en la parte superior de su <em>/etc/pf.conf</em>.
+# ifconfig carp2 vhid 2 carpdev sis1 pass somethingother advskew 100 10.0.0.13 netmask 255.255.255.0
+</pre>
 
-Todo debería funcionar ahora. Haga ssh a 192.168.2.13 y ejecute <em>hostname</em>. Debería mostrar soekris001. Si desconecta la corriente y hace ssh a 192.168.2.13 otra vez deberia mostrar <em>soekris002</em>.
+<p>
+Asegurese de poner lo siguiente en la parte superior de su
+<em>/etc/pf.conf</em>.
+</p>
 
-Para mantener esta configuración siempre que la maquine se inicie, necesitamos crear/editar algunos ficheros.
+<p>
+Todo debería funcionar ahora. Haga ssh a 192.168.2.13 y ejecute
+<em>hostname</em>. Debería mostrar soekris001. Si desconecta la
+corriente y hace ssh a 192.168.2.13 otra vez deberia mostrar
+<em>soekris002</em>.
+</p>
+
+<p>
+Para mantener esta configuración siempre que la maquine se inicie,
+necesitamos crear/editar algunos ficheros.
+</p>
+
 <ul>
 	<li>hostname.sis0</li>
 	<li>hostname.sis1</li>
@@ -215,8 +463,13 @@ Para mantener esta configuración siempre que la maquine se inicie, necesitamos 
 	<li>hostname.carp1</li>
 	<li>hostname.carp2</li>
 </ul>
+
+<p>
 En el soekris001:
-<pre># cat /etc/hostname.sis0
+</p>
+
+<pre>
+# cat /etc/hostname.sis0
 inet 192.168.2.14 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duplex description External
 # cat /etc/hostname.sis1
 inet 10.0.0.14 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duplex description Internal
@@ -225,9 +478,15 @@ inet 172.14.0.14 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duple
 # cat /etc/hostname.carp1
 inet 192.168.2.13 255.255.255.0 192.168.2.255 vhid 1 carpdev sis0 pass somethingsecret
 # cat /etc/hostname.carp2
-inet 10.0.0.13 255.255.255.0 10.0.0.255 vhid 2 carpdev sis1 pass somethingother</pre>
+inet 10.0.0.13 255.255.255.0 10.0.0.255 vhid 2 carpdev sis1 pass somethingother
+</pre>
+
+<p>
 En el soekris002:
-<pre># cat /etc/hostname.sis0
+</p>
+
+<pre>
+# cat /etc/hostname.sis0
 inet 192.168.2.15 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duplex description External
 # cat /etc/hostname.sis1
 inet 10.0.0.15 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duplex description Internal
@@ -236,31 +495,78 @@ inet 172.14.0.15 255.255.255.0 192.168.2.255 media 100baseTX mediaopt full-duple
 # cat /etc/hostname.carp1
 inet 192.168.2.13 255.255.255.0 192.168.2.255 vhid 1 carpdev sis0 pass somethingsecret advskew 100
 # cat /etc/hostname.carp2
-inet 10.0.0.13 255.255.255.0 10.0.0.255 vhid 2 carpdev sis1 pass somethingother advskew 100</pre>
-Ahora el soekris002 tomará el control si el soekris001 muere. Lo único molesto es que las conexiones establecidas se perderán. Para ello viene <em>pfsync</em> al rescate.
+inet 10.0.0.13 255.255.255.0 10.0.0.255 vhid 2 carpdev sis1 pass somethingother advskew 100
+</pre>
 
-<strong>Configurar pfsync</strong>
+<p>
+Ahora el soekris002 tomará el control si el soekris001 muere. Lo único
+molesto es que las conexiones establecidas se perderán. Para ello
+viene <em>pfsync</em> al rescate.
+</p>
 
-<em>pfsync</em> syncroniza los estados de pf entre las dos maquinas soekris. De esta manera las conexiones establecidas continuarán en caso de fallo.
+<h3>Configurar pfsync</h3>
 
-Vamos a usar sis2 para esto. Esta interfaz ya tiene una dirección IP. Todo lo que debemos hacer es crear la interfaz <em>pfsync0</em> y adjuntarla a <em>sis2</em>.
+<p>
+<em>pfsync</em> syncroniza los estados de pf entre las dos maquinas
+soekris. De esta manera las conexiones establecidas continuarán en
+caso de fallo.
+</p>
 
+<p>
+Vamos a usar sis2 para esto. Esta interfaz ya tiene una dirección
+IP. Todo lo que debemos hacer es crear la interfaz <em>pfsync0</em> y
+adjuntarla a <em>sis2</em>.
+</p>
+
+<p>
 En las dos máquinas:
-<pre>ifconfig pfsync0 syncdev sis2</pre>
-Para establecer esta configuración cuando la maquina arranque, deberemos crear el fichero <em>/etc/hostname.pfsync0</em>:
-<pre># cat /etc/hostname.pfsync0
-up syncdev sis2</pre>
-Asegurese de poner esto en la parte superior de su <em>/etc/pf.conf</em>.
-<pre>pass on sis2 proto pfsync</pre>
-<strong>Consejos /etc/pf.conf</strong>
+</p>
 
-Recuerde: el filtrado tiene lugar en la interfaz física, no en la interfaz virtual <em>carpX</em>. De todas formas la interfaz virtual se puede usar combinada con direcciones:
-<pre>pass in on sis0 from any to carp1 port ssh</pre>
+<pre>
+ifconfig pfsync0 syncdev sis2
+</pre>
+
+<p>
+Para establecer esta configuración cuando la maquina arranque,
+deberemos crear el fichero <em>/etc/hostname.pfsync0</em>:
+</p>
+
+<pre>
+# cat /etc/hostname.pfsync0
+up syncdev sis2
+</pre>
+
+<p>
+Asegurese de poner esto en la parte superior de su
+<em>/etc/pf.conf</em>.
+</p>
+
+<pre>
+pass on sis2 proto pfsync
+</pre>
+
+<h3>Consejos /etc/pf.conf</h3>
+
+<p>
+Recuerde: el filtrado tiene lugar en la interfaz física, no en la
+interfaz virtual <em>carpX</em>. De todas formas la interfaz virtual
+se puede usar combinada con direcciones:
+</p>
+
+<pre>
+pass in on sis0 from any to carp1 port ssh
+</pre>
+
+<p>
 Reemplazando sis0 por carp1 no funcionará.
+</p>
 
-<strong>Referencias</strong>
+<h3>Referencias</h3>
 
+<p>
 Visite las siguientes direcciones para más información:
+</p>
+
 <ul>
 	<li><a href="http://www.openbsd.org/cgi-bin/man.cgi?query=carp&amp;sektion=4&amp;manpath=OpenBSD+4.0">carp(4)</a></li>
 	<li><a href="http://www.openbsd.org/cgi-bin/man.cgi?query=pfsync&amp;sektion=4&amp;manpath=OpenBSD+4.0">pfsync(4)</a></li>
@@ -270,10 +576,19 @@ Visite las siguientes direcciones para más información:
 	<li><a href="http://www.openbsd.org/cgi-bin/man.cgi?query=ifstated&amp;sektion=8&amp;manpath=OpenBSD+4.0">ifstated(8)</a></li>
 	<li><a href="http://www.openbsd.org/cgi-bin/man.cgi?query=ifstated.conf&amp;sektion=5&amp;manpath=OpenBSD+4.0">ifstated.conf(5)</a></li>
 </ul>
-Copyright (c) 2006 Michiel van Baak.
 
+<p>
+Copyright (c) 2006 Michiel van Baak.
+</p>
+
+<p>
 Permission is granted to copy, distribute and/or modify this document under the terms of the
 GNU Free Documentation License, Version 1.2 or any later version published by the Free Software Foundation;
-with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover
+Texts.
+</p>
 
-A copy of the license is included in the section entitled "GNU Free Documentation License".
+<p>
+A copy of the license is included in the section entitled "GNU Free
+Documentation License".
+</p>

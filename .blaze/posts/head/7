@@ -1,5 +1,5 @@
 [header]
   author = Angel Abad
   date = 2006-12-21
-  tags = debian, monitorización, puppet, servidor
+  tags = debian, mail, servidor
   title = Postfix y Postgrey: Un acercamiento a la lucha proactiva contra el spam

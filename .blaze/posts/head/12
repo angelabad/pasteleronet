@@ -1,5 +1,5 @@
 [header]
   author = Angel Abad
   date = 2006-08-20
-  tags = debian, monitorización, puppet, servidor
+  tags = debian, servidor, virtualizacion
   title = Xen en Debian Sarge mediante Backports

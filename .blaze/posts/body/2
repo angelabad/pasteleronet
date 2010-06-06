@@ -1,0 +1,49 @@
+Artículo traducido de <a href="http://www.debian-administration.org/articles/30">http://www.debian-administration.org/articles/30</a>
+
+OpenSSH puede ser usado para varias cosas, desde conectarse a un host remoto hasta transferir archivos de forma segura. Gracias al nuevo módulo del kernel shfs es posible usarlo para montar sistemas de ficheros remotos de manera segura.
+
+Usar SSH parar montar un sistema de ficheros remoto significa que puedes editar ficheros en la máquina remota usando utilidades locales que no tienen porque estar disponibles de forma remota,
+
+Si usas  <a href="http://www.kde.org">KDE</a> puedes  navegar por los sistemas de ficheros remotos usando el protocolo sftp,  como se explica en esta <a href="http://www.linuxgazette.com/node/view/401">simple introducción.</a>
+
+Esto es bueno si estás usando aplicaciones basadas en KDE, pero no ayuda si usas <a href="http://www.gnome.org">GNOME</a> o si quieres editar ficheros desde una aplicación de consola.
+
+Aquí entra shfs, el ssh-file-system. <a href="http://shfs.sourceforge.net/">shfs</a> es un módulo del kernel que permte montar un sistema de ficheros remoto usando SSH como transporte.
+
+<!--break-->
+
+Instalarlo es muy simple en un sistema Debian Inestable.
+
+Lo primero descarga el paquete con el código fuente un par de programas que te ayudarán.
+<pre># apt-get install shfs-source shfs-utils module-assistant</pre>
+(El módulo se descarga como código fuente porque debe ser reconstruido para que coincida con el kernel que estas corriendo, igual que el módulo de NVidia.)
+
+Ahora usa module assistant para construir el módulo y que coincida con tu sistema local. Esto funcionará si tanto si usas un kernel 2.4.x o nuevo 2.6.x.
+<pre># module-assistant build shfs</pre>
+Esto te mostrará una pantalla azun con una barra de progreso de la construcción del módulo. Cuando esto acabe ya puedes instalarlo:
+<pre># module-assistant install shfs
+(Reading database ... 87702 files and directories currently installed.)
+Preparing to replace shfs-module-2.4.27-1-k7 0.35-1+2.4.27-2 (using .../shfs-module-2.4.27-1-k7_0.35-1+2.4.27-2_i386.deb) ...
+Unpacking replacement shfs-module-2.4.27-1-k7 ...
+Setting up shfs-module-2.4.27-1-k7 (0.35-1+2.4.27-2) ...</pre>
+Puede que veas un mensaje como el de abajo despues de la instalación. No es importante y puede ser ignorado:
+<pre>depmod: *** Unresolved symbols in /lib/modules/2.4.26-1-686/shfs/shfs.o</pre>
+Ahora llega el momento de la verdad, la prueba
+
+Crea un punto de montaje e intenta montar el sistema de ficheros:
+<pre># mkdir /mnt/remote
+# shfsmount skx@sun:/var/www /mnt/remote
+Password:
+# cd /mnt/remote/
+# ls
+Effective-C++  analog     fwanalog    isoqlog     phpsysinfo  tor
+Reference      calamaris  index.html  jeff_wayne  stats       uptimes.html</pre>
+El sistema de ficheros se monta y podemos editar los fichero que haya en el!
+
+Para desmontar el sistema de ficheros ejecuta:
+<pre># cd ..
+# umount /mnt/remote</pre>
+Si quieres poder hacer esto la proxima vez que reinicies necesitas asegurarte de que el módulo es añadido a la lista de módulos que se cargan cuando arranca tu máquina.
+
+Para hacer esto añade shfs al final del archivo /etc/modules:
+<pre># echo 'shfs' &gt;&gt; /etc/modules</pre>

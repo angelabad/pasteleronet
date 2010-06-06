@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+                      "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <!-- content-type -->
+  <!-- generator -->
+  <!-- date -->
+  <!-- stylesheet -->
+  <!-- rss -->
+  <title><!-- page-title --></title>
+</head>
+
+<body>
+
+<div id="wrap">
+  <div id="header">
+    <h1 id="logo-text"><a href="%home%"><!-- title --></a></h1>
+    <p id="slogan"><!-- subtitle --></p>
+
+    <div id="top-menu">
+      <p><a href="%home%">Inicio</a> | <a href="%root%index.rss">Feed</a></p>
+    </div>
+  </div>
+
+  <div id="nav">
+    <ul>
+<li><a href="%home%">Inicio</a></li>
+<li><a href="http://www.pastelero.net/fotos">Album de fotos</a></li>
+<!-- pages -->
+    </ul>
+  </div>
+
+  <div id="content">
+    <div id="main">
+<!-- content -->
+    </div>
+
+    <div id="sidebar">
+      <h3>About</h3>
+      <p><a href="%home%"><img src="%root%images/gravatar.jpg" width="40" height="40" alt="avatar" class="float-left"></a>
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec libero. Suspendisse bibendum.
+      Cras id urna. Morbi tincidunt, orci ac convallis aliquam, lectus turpis varius lorem, eu
+      posuere nunc justo tempus leo. Donec mattis, purus nec placerat bibendum, dui pede condimentum
+      odio, ac blandit ante orci ut diam.</p>
+
+      <!--
+      <h3>Search</h3>
+      <form id="qsearch" action="%home%" method="get" >
+      <p>
+      <label for="qsearch">Search:</label>
+      <input class="tbox" type="text" name="qsearch" value="Search this site..." title="Start typing and hit ENTER">
+      <input class="btn" alt="Search" type="image" name="searchsubmit" title="Search" src="%root%images/search.gif">
+      </p>
+      </form>
+      -->
+
+      <h3>Categories</h3>
+      <ul class="sidemenu">
+<!-- tags -->
+      </ul>
+
+      <h3>Archive</h3>
+      <ul class="sidemenu">
+<!-- archive -->
+      </ul>
+
+      <h3>Links</h3>
+      <ul class="sidemenu">
+<li><a href="http://blaze.blackened.cz/">BlazeBlogger</a></li>
+<li><a href="http://www.styleshout.com/">Styleshout</a></li>
+      </ul>
+
+      <h3>Recommended</h3>
+      <ul class="sidemenu">
+<li><a href="http://www.linajecontreras.com/">Linaje Contreras <br><span>mGenealogía Contreras - Mantenido por mi ama</span></a></li>
+<li><a href="http://pidiblog.googlecode.com/">pidiblog <br><span>a minimalistic microblogging system</span></a></li>
+<li><a href="http://www.dxirc.org/">dxirc <br><span>a cross-platform IRC client</span></a></li>
+<li><a href="http://w2do.blackened.cz/">w2do <br><span>a simple text-based todo manager</span></a></li>
+      </ul>
+
+      <h3>Wise Words</h3>
+      <p>&quot;We can let circumstances rule us, or we can take
+      charge and rule our lives from within.&quot;</p>
+
+      <p class="align-right">- Earl Nightingale</p>
+    </div>
+  </div>
+
+  <div id="footer">
+      <p>
+        Copyright &copy; <!-- year --> <!-- name -->
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <a href="http://validator.w3.org/check?uri=referer">HTML</a> |
+        <a href="http://jigsaw.w3.org/css-validator/check/referer">CSS</a> |
+        Design by <a href="http://www.styleshout.com/">styleshout</a>
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        Powered by <a href="http://blaze.blackened.cz/">BlazeBlogger</a>
+      </p>
+  </div>
+</div>
+
+</body>
+</html>

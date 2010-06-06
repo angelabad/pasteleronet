@@ -1,0 +1,93 @@
+Artículo traducido de:  <a href="http://www.debuntu.org/postfix-and-postgrey-a-proactive-approach-to-spam-filtering">Postfix and Postgrey: A proactive approach to spam filtering</a>
+
+El <strong>greylisting</strong> es otra forma más de prevenir que su buzón se llene de spam. Un software de lucha contra spam famoso es <strong>spamassassin</strong>, el cual filtra emails. El greylisting no remplazará este tipo de software pero puede actuar como una barrera proactiva que reducirá la cantidad de spam en su servidor de correo.
+
+<!--break-->
+<h3>1. Introducción</h3>
+El <strong>greylisting</strong> es una gran solución contra el spam, la idea basica es que los servidores de correo de los spammers no respetan las especificaciones estandar <em>RFC</em>, que básicamente dice que cuando un email no puede ser entregado, el servidor de correo debería intentarlo de nuevo más tarde. Al enviar gran cantidad de emails, los spammers no pueden permitirse desperdiciar recursos reenviando email cuando no pueden ser entregados, así, que si el email no es entregado a la primera, no volverá a ser reenviado.
+
+Basandose en esta idea, el <strong>greylisting</strong> simplemente rechaza cualquier email de dominios que no sean de confianza devolviendo un código de respuesta <strong><em>450</em></strong>, lo que significa <em>"No puedo atender tu petición ahora, por favor intentalo más tarde"</em>.
+Como los servidores de spam no suelen cumplir con el RFC, no volverán a intentar reenviar el email, así que usted no recibirá el spam.
+<h3>2. Postgrey</h3>
+<h4>2.1 Introducción</h4>
+<strong>Postgrey</strong> es un <strong>servidor de politicas postfix</strong> que implementa el <strong>greylisting</strong>.
+Es realmente fácil integrarlo en postfix y muy efectivo.
+
+La función de postgrey es guardar un registro del trío: IP_CLIENTE / REMITENTE / RECIPIENTE. Si es la primera vez que el trío es visto, o ha sido visto la primera vez hace menos de 5 minutos, el trío es marcado como <strong>greylisted</strong>, y el email sera rechazado con un <em><strong>error temporal</strong></em>. Si lo mismo es visto después de 5 minutos y antes de 35 dias, el email será aceptado.
+
+Nota: Notese que los 5 minutos y los 35 dias son valores por defecto. Mas adelante, explicaré como cambiarlos.
+<h4>2.2 Instalación</h4>
+<strong>Postgrey</strong> se encuentra empaquetado para Debian/Ubuntu, es facilísimo de instalar. Simplemente debe ejecutar:
+<pre><code>$sudo apt-get install postgrey</code></pre>
+También en Debian, postgrey funciona por defecto. Por defecto escucha en la <strong><em>interfaz loopback</em></strong> (127.0.0.1) en el puerto 60000. Así que, el servicio <strong>postgrey</strong> no será accesible desde fuera.
+
+Ahora debemos decir a <strong>postfix</strong> que utilice el servidor de políticas <strong>postgrey</strong>.
+<h4>3. Configurando Postfix</h4>
+Como he comentado antes, es realmente fácil integrar <strong>postgrey</strong> en <strong>postfix</strong> (aunque necesitará al menos postfix 2.1). Todos los cambios se harán en <em><strong>/etc/postfix/main.cf</strong></em>. Así que abra <em><strong>/etc/postfix/main.cf</strong></em> y asegurese de añadir <em>check_policy_service inet:127.0.0.1:60000</em> al final de <em>smtpd_recipient_restrictions</em>, obtendrá algo similar a lo siguiente:
+<pre>smtpd_recipient_restrictions = permit_mynetworks,
+permit_sasl_authenticated,
+reject_unauth_destination,
+check_policy_service inet:127.0.0.1:60000</pre>
+<strong>Nótese que su configuración puede ser algo diferente</strong>
+
+Vuelva a cargar la configuración de <strong>postfix</strong>:
+<pre><code>$sudo /etc/init.d/postfix reload</code></pre>
+Ahora la política de greylisting y el servidor de correo postfix empezarán a rechazar temporalmente los emails entrantes y empezará a ver los siguiente:
+<pre><code>Nov 23 21:42:10 mymailserver postfix/smtpd[4256]: NOQUEUE: reject: RCPT from spammerrelay.com[xxx.xxx.xxx.xxx]: 450 : Recipient address rejected: Greylisted for 300 seconds (see http://isg.ee.ethz.ch/tools/postgrey/help/spammed.com.html); from= to= proto=ESMTP helo=</code></pre>
+A partir de ahora la cantidad de spam que llegará a su buzón será drásticamente reducida.
+
+Es el momento de ver <strong>postgrey</strong> más en profundidad, para aquellos que les apetezca enredar un poco.
+<h3>4. Enredando con Postgrey</h3>
+<h4>4.1. Ficheros de configuración de Postgrey</h4>
+Hay dos ficheros de configuración principales en <em><strong>/etc/postgrey</strong></em>: <em><strong>whitelist_clients</strong></em> y  <em><strong>whitelist_recipients</strong></em>.
+
+En <em><strong>whitelist_clients</strong></em>, usted puede definir una lista de servidores de correo que no quiere que sean tratados con <em><strong>greylist</strong></em>. Puede ser porque sean hosts de confianza, o por algún tema en concreto con el greylist.
+
+Las direcciones de los clientes se pueden escribir de las siguientes maneras:
+<ul>
+	<li>domain.addr: el dominio completo</li>
+	<li>WWW.XXX.YYY.ZZZ: una dirección IP</li>
+	<li>/regex/: una expresión regular</li>
+</ul>
+En <strong><em>whitelist_recipients</em></strong>, puede especificar la lista de destinatarios a los que no quiere aplicar el greylisting.
+
+Los remitentes se pueden especificar de las siguientes formas:
+<ul>
+	<li>domain.addr: el dominio completo</li>
+	<li>name@: siempre que "name" sea utilizado por un dominio, también incluye las direcciones extendidas como name+foo@.*</li>
+	<li>name@domain: correos para name@domain así como las direcciones extendidas</li>
+	<li>/regex/: una expresión regular</li>
+</ul>
+<h4>4.2. Opciones del demonio Postgrey</h4>
+Antes comenté que <strong>postgrey</strong> hace <strong><em>greylist</em></strong> para los correos 5 minutos si es la primera vez que ve el trío ip_cliente/remitente/destinatario o si la última vez que vio el trío ha sido visto hace más de 35 días.
+
+Bien, estas opciones pueden ser ajustadas cuando arranca el <strong>demonio postgrey</strong>. En un sistema tipo Debian, estas opciones se encuentran en <strong><em>/etc/default/postgrey</em></strong>.
+
+Por defecto este fichero contiene:
+<pre><code>POSTGREY_OPTS="--inet=127.0.0.1:60000"</code></pre>
+Ahora imagine que quiere hacer greylist para los correos durante 2 minutos, y dejar que un trio pase si ha sido marcado por el greylist antes de 20 días, deberá utilizar la siguiente configuración:
+<pre><code>POSTGREY_OPTS="--inet=127.0.0.1:60000 --delay=120 --max-age=20"</code></pre>
+Además de esto, <strong>postgrey</strong> tiene una buena característica, y es la habilidad de hacer whitelist a los trios que hayan enviado correos satisfactoriamente que 5 veces (valor por defecto)  y si ha sido visto antes de <strong>--max_age</strong>.
+
+Este valor se puede cambiar con <strong><em>--auto-whitelist-clients</em></strong>. Ajustandolo a <strong>0</strong> se deshabilita esta caraterística. Si quiere modificar este valor, al igual que más arriba, modifique <strong><em>/etc/default/postgrey</em></strong> y establezca <strong><em>--auto-whitelist-clients</em></strong> en base a sus necesidades, por ejemplo:
+<pre><code>POSTGREY_OPTS="--inet=127.0.0.1:60000 --delay=120 --max-age=20 --auto-whitelist-clients=10"</code></pre>
+<h3>5. Informe de Postgrey</h3>
+<strong>Postgrey</strong> es distribuido con la herramienta <strong>postgreyreport</strong>. Usando <strong>postgreyreport</strong> puede ver los tríos que no han pasado el greylist (significa la diferencia entre la primera y la ultima vez es menor que --delay=N sería spam). Para obtener un informe, puede utilizar la siguiente linea de comandos:
+<pre><code> #cat /var/log/mail.log | postgreyreport --nosingle_line --check_sender=mx,a --show_tries --separate_by_subnet=":===============================================================================================n"</code></pre>
+Obtendría una salida parecida a:
+<pre><code> :===============================================================================================
+unknown XXX.XXX.XXX.XXX
+1 spammer1@spammer1.com user1@host1.com
+1 spammer2@spammer2.com user2@host2.com
+1 spammer3@spammer3.com user3@host3.com
+:===============================================================================================
+unknown YYY.YYY.YYY.YYY
+1 spammer4@spammer4.com user4@domain1.com
+:===============================================================================================
+unknown ZZZ.ZZZ.ZZZ.ZZZ
+1 spammer5@spammer5.com user1@host1.com
+1 spammer6@spammer6.com user1@host1.com
+1 spammer7@spammer7.com user2@host2.com
+:=============================================================================================== </code></pre>
+<h3>6. Conclusión</h3>
+<strong>Postgrey</strong> es realmente fácil de instalar y obtendrá un trabajo eficiente con sólo activarlo. La única pega que se le puede encontrar es que la primera vez que un remitente envíe un email sera retrasado 5 minutos (o su configuración --delay). Si esto es un problema para usted, puede añadir una lista de dominios de confianza (whitelisted) en <strong><em>/etc/postgrey/whitelist_clients</em></strong>. Pero, de todas formas, puede mantener los 5 minutos, la gente con la que intercambie correo habitualmente, entrará rápidamente en las entradas autowhitelist y no sufrirá el retraso más veces.

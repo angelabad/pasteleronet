@@ -1,0 +1,218 @@
+Artículo traducido de: <a href="http://deb.riseup.net/storage/encryption/dmcrypt/">http://deb.riseup.net/storage/encryption/dmcrypt/</a>
+
+Aquí se explica como usar dm-crypt. Dm-crypt es más rápido que cryptoloop y mas fácil que loop-aes.
+Eche un vistazo de todas formas a cryptoloop (obsoleto) o a <a href="http://deb.riseup.net/storage/encryption/dmcrypt/loop-aes">loop-aes</a> (más seguro, más rápido).
+
+<!--break-->
+
+<strong>Desde el sitio web</strong>
+<blockquote>Device-mapper es una nueva infraestructura en el kernel Linux 2.6 que provee una forma genérica para crear capas virtuales de dispositivos de bloques que puede ejecutar diferentes acciones sobre los dispositivos de bloques reales como striping, concatenación, espejo, snapshoting, etc... Device-mapper es usado por las herramientas LVM2 y EVMS2. dm-crypt es como un device-mapper que provee encriptación transparente de los dispositivos de bloques usando el nuevo cryptoapi del Linux 2.6. Las escrituras a este dispositivo serán encriptadas y las lecturas desencriptadas. Puede montar sus sistema de ficheros como siempre. Pero sin la clave usted no podrá acceder a sus datos. Esto es básicamente lo mismo que cryptoloop pero su código es mucho más limpio y una interfaz de configuración más flexible. El formato on-disk es también compatible.</blockquote>
+sitio web: <a href="http://www.saout.de/misc/dm-crypt/">www.saout.de/misc/dm-crypt/</a>
+wiki dm-crypt: <a href="http://www.saout.de/tikiwiki/">www.saout.de/tikiwiki/</a>
+velocidad de ciphers: <a href="http://fp.gladman.plus.com/cryptography_technology/aesr2/">fp.gladman.plus.com/cryptography_technology/aesr2/</a>
+
+<strong>instalar el kernel</strong>
+
+El kernel-image 2.6 por defecto parece funcionar perfectamente. Si usted esta compilando el suyo propio, esto es lo que debe elegir:
+<ul>
+	<li>Code maturity level options  ---&gt;
+<ul>
+	<li><strong>on:</strong> Prompt for development and/or incomplete code/drivers</li>
+</ul>
+</li>
+	<li>General setup ---&gt;
+<ul>
+	<li><strong>on:</strong> Support for hot-pluggable devices</li>
+</ul>
+</li>
+	<li>Device Drivers &gt; Multi-device support (RAID and LVM).
+<ul>
+	<li><strong>on:</strong> Device mapper support</li>
+	<li><strong>on:</strong> Crypt target support</li>
+</ul>
+</li>
+	<li>Cryptographic options  ---&gt;
+<ul>
+	<li><strong>on:</strong> AES cipher algorithms</li>
+</ul>
+</li>
+</ul>
+Los drivers de desarrollo deben estar activados, sino no podrá activar el soporte crypt target para device mapper. Habilitando el soporte para dispositivos hot-pluggable se contruye udev en el kernel, que hace las cosas más fáciles. Si activa udev, asegúrese de no activar devfs.
+
+Con su nuevo kernel corriendo, chequee que device mapper existe:
+<pre># ls -L /dev/mapper/control</pre>
+Si no tiene el dispositivo mapper, instalando el paquete dmsetup lo creará para usted.
+
+También chequee si AES está soportado (o cualquier otro cipher que decida usar):
+<pre>#cat /proc/crypto</pre>
+debería devolver:
+<pre>name            : aes
+module         : aes
+type              : cipher
+blocksize       : 16
+min keysize   : 16
+max keysize  : 32</pre>
+Si está corriendo crypto como módulos, no verá nada cuando mire /proc/crypto hasta que el módulo no esté cargado. cryptsetup cargará los módulos que necesite cuando esté corriendo. Si quiere cargar el módulo manualmente, usando el kernel de debian 2.6.7, debería hacer esto:
+<pre># instmod /lib/modules/2.6.7-1-386/kernel/crypto/aes.ko</pre>
+O simplemente:
+<pre># modprobe aes</pre>
+<strong>Instalar las herramientas de usuario</strong>
+
+<em>dmsetup</em>
+
+Instale dmsetup, la libreria de espacio de usuario para el Device Mapper del kernel linux:
+<pre># apt-get install dmsetup</pre>
+Al instalar este paquete se crearán los dispositivos mapper en caso de que no existan.
+
+Compruebe que el target crypt está soportado:
+<pre># dmsetup targets
+crypt            v1.0.0
+striped          v1.0.1
+linear           v1.0.1
+error            v1.0.1</pre>
+(Si está usando un kernel basado en módulos, este se cargará cuando sea necesario).
+
+<em>cryptsetup</em>
+
+cryptsetup es una herramienta que facilita el uso de dm-crypt, así no tendrá que hacer las llamadas a dm-setup directamente.
+<pre># apt-get install cryptsetup</pre>
+<em>Siguientes pasos</em>
+
+Ahora debe decidir si desea utilizar una particion o un fichero loop como dispositivo que usará el device mapper.
+
+<strong>Particiones encriptadas</strong>
+
+Estas son las instrucciones para usar dm-crypt para crear un sistema de ficheros en una partición. Vea mas abajo para como hacerlo con un fichero loopback.
+
+<em>Creando la partición encriptada</em>
+
+Para crear nuestra partición encriptada, debemos seguir tres pasos:
+<ul>
+	<li>ejecutar cryptsetup en la partición, esto crea el dispositivo device mapper con el target 'crypt'.</li>
+	<li>Crear el sistema de ficheros en nuestro nuevo dispositivo.</li>
+	<li>montar nuestro dispositivo.</li>
+</ul>
+En nuestro ejemplo, convertiremos el volumen físico /dev/sda9 en un volumen lógico (encriptado) en /dev/mapper/maildir (la etiqueta es 'maildir') y lo montaremos en /var/maildir.
+
+Cree el volumen lógico (con el binario cryptsetup):
+<pre># cryptsetup -y create maildir /dev/sda9</pre>
+o cree el volumen lógico (con el script cryptsetup que viene con el paquete hashalot):
+<pre># cryptsetup -c aes -h ripemd160 -s 32 create maildir /dev/sda9</pre>
+confirme que está funcionando:
+<pre>#dmsetup ls
+maildir (254, 0)</pre>
+cree el sistema de ficheros:
+<pre># mkfs.reiserfs /dev/mapper/maildir</pre>
+monte el sistema de ficheros:
+<pre># mount /dev/mapper/maildir /var/maildir</pre>
+<em>Uso en el mundo real</em>
+
+Cada vez que reiniciemos, necesitamos volver a ejecutar crypsetup e introducir la misma contraseña. En caso de introducir la contraseña incorrectamente, el dispositivo encriptado no se podrá montar y necesitaremos destruirlo y volver a intentarlo. No se preocupe: si no formateamos el dispositivo creado con la contraseña incorrecta, no se perderá ningún dato.
+
+Hay dos formas de hacer esto: en el inicio o ejecutando un script manualmente.
+
+<em>En el inicio</em>
+
+Puede editar /etc/fstab para tener /dev/mapper/maildir montado en /var/maildir. Esto sólo funcionará si cryptsetup está corriendo antes de que las particiones sean leídas por /etc/fstab.
+
+/etc/init.d/cryptinit:
+<pre>if [ -b /dev/mapper/maildir ]; then
+/usr/bin/cryptsetup remove maildir
+fi
+/usr/bin/cryptsetup create maildir /dev/sda9</pre>
+<pre># cd /etc/rcS.d
+# ln -s ../init.d/cryptinit S08cryptinit</pre>
+<em>A mano</em>
+
+Simplemente ejecute este script para tener la partición funcionando:
+<pre>if [ -b /dev/mapper/maildir ]; then
+/usr/bin/cryptsetup remove maildir
+fi
+/usr/bin/cryptsetup create maildir /dev/sda9
+mount /dev/mapper/maildir /var/maildir</pre>
+<strong>Particiones home dmcrypt</strong>
+
+Para que pam monte su partición encriptada automáticamente en el login, por favor haga los siguientes cambios:
+<pre># apt-get install libpam-mount cryptsetup openssl</pre>
+añada esto al final de /etc/pam.d/common-auth
+<pre>auth	optional	pam_mount.so use_first_pass</pre>
+y esto al final de /etc/pam.d/common-session
+<pre>session 	optional	pam_mount.so</pre>
+(alternativamente, puede añadir "@include common-pammount" al final de common-auth y common-session).
+
+añada esto a /etc/security/pam_mount.conf
+<pre>volume elijah crypt - /dev/hda4 /home/elijah cipher=aes aes-256-ecb /home/elijah.key</pre>
+(en este caso, 'elijah' es el nombre de usuario).
+
+cree /home/elijah.key:
+<pre>echo "my dmcrypt password" | openssl aes-256-ecb &gt; /home/elijah.key</pre>
+(esto no es buena idea porque tu password se queda en tu fichero de historial!) Esto te preguntará por tu password. Debes introducir la contraseña de tu <strong>usuario</strong>. Este comando encriptará tu contraseña dmcrypt (usada para montar la partición dmcrypt) con la contraseña de tu usuario. Cuando te logueas, pam-mount usa la password de tu usuario para desencriptar el fichero .key, entonces usa la password en el fichero .key para montar tu directorio home.
+
+Alternativamente, si las contraseña de tu usuario y la de dmcrypt es la misma, la linea en /etc/security/pam_mount.conf sería como esta:
+<pre>volume elijah crypt - /dev/hda4 /home/elijah cipher=aes - -</pre>
+Edite /etc/login.defs:
+<pre>CLOSE_SESSIONS yes</pre>
+(sino tu partición encriptada no se desmontará cuando hagas logout).
+
+Si está utilizando sarge o una versión mas antigua, necesita añadir el enlace simbólico /sbin/mount.crypt -&gt; /usr/bin/mount.crypt ya que ahora mount -t crypt funciona (debian bug: #267285).
+
+Tu home puede ser un fichero loopback. Siga las instrucciones normales para loopback y especifiquelo en /etc/sercurity/pam_mount.conf:
+<pre>volume elijah crypt - /home/home.img /home/elijah loop,cipher=aes aes-256-ecb /home/home.key</pre>
+La única diferencia con usar una partición real es que tu dispositivo fuente es el nombre del fichero loopback, y que añadimos 'loop' a nuestra lista de opciones.
+
+<strong>Loopback encriptado</strong>
+
+Aquí se explica como usar dm-crypt para crear un sistema de ficheros en un archivo loopback, esto significa almacenar un sistema de ficheros encriptado en un fichero individual. Es útil si usted no puede o no quiere encriptar su partición entera. Vea arriba para saber como encriptar una partición entera.
+
+Si usted ya tiene un sistema de ficheros, como tu directorio /home, que quiere encriptar pero no puede destruir el sistema de ficheros y recrearlo otra vez. O si sólo quiere encriptar parte de él, puede hacer con un fichero loopback encriptado con dm-crypt.
+
+<em>instalación</em>
+
+Siga las mismas instrucciones que para las particiones, pero deténgase antes de instalar cryptsetup.
+
+<em>Crear el loopback</em>
+
+Debe crear un fichero loopback, esto es sólo un fichero normal en tu sistema de ficheros creado con datos aleatorios. Haga el fichero loopback tan grande como quiera que sea su loopback encriptado.
+
+Lo siguiente crea un fichero de 100 megas con datos aleatorios en /home/secret:
+<pre># dd if=/dev/urandom of=/home/secret bs=1M count=100</pre>
+Ponga este fichero como un dispositivo loopback:
+<pre># losetup /dev/loop0 /home/secret</pre>
+<em>Encriptar el loopback</em>
+
+Debe seguir tres pasos para encriptar su fichero loopback:
+<ul>
+	<li>ejecute cryptsetup en el fichero loopback, esto crea un dispositivo device mapper con el target 'crypt'.</li>
+	<li>cree el sistema de ficheros en su nuevo dispositivo</li>
+	<li>monte su nuevo dispositivo</li>
+</ul>
+En nuestro ejemplo convertiremos el fichero /home/secret en el dispositivo encriptado /dev/mapper/mycrypt (la etiqueta es 'mycrypt') y luego lo montaremos en /mnt/sekret:
+
+cree el volumen lógico (con el binario cryptsetup):
+<pre># cryptsetup -y create mycrypt /dev/loop0</pre>
+confirme que ha funcionado:
+<pre># dmsetup ls
+mycrypt (254, 0)</pre>
+cree el sistema de ficheros:
+<pre># mkfs.ext3 /dev/mapper/mycrypt</pre>
+monte el sistema de ficheros:
+<pre># mount /dev/mapper/mcrypt /mnt/sekret</pre>
+puede añadir algo como lo siguiente a su /etc/fstab:
+<pre>/dev/mapper/mcrypt	/mnt/sekret	ext3	noauto,noatime	0	0</pre>
+Cuando termine de su usar su loopback encriptado es necesario que lo desmonte y elimine el dispositivo creado en devicemapper, si no hace esto, cualquiera podrá volver a montarlo sin teclear la contraseña!
+<pre># umount /mnt/sekret
+# cryptsetup remove mycrypt</pre>
+Cree un script para iniciarlo y montarlo mas fácilmente:
+<pre>#!/bin/sh
+
+losetup /dev/loop0 /home/secret
+cryptsetup create mycrypt /dev/loop0
+mount /dev/mapper/mycrypt /mnt/sekret</pre>
+<strong>Lvm2 sobre dmcrypt</strong>
+
+Por defecto lvm2 no considera los dispositivos de bloques device-mapper (como un dispositivo dm-crypt) para ser usados como volúmenes físicos.
+
+Para usar un dispositivo dm-crypt como un lvm2 pv, añada esta linea a los dispositivos de bloques en /etc/lvm/lvm.conf:
+<pre>types = [ "device-mapper", 16]</pre>
+Si /etc/lvm/lvm2.conf no existe, puede crear uno basado en su configuracion o la configuración por defecto con:
+<pre># lvm dumpconfig &gt; /etc/lvm/lvm.conf</pre>

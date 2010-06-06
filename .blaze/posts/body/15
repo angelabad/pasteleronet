@@ -1,0 +1,109 @@
+<p>Artículo traducido de: <a href="http://www.debian-administration.org/articles/621">http://www.debian-administration.org/articles/621<br />
+</a><br />
+Muchos servicios están empezanzo a estar disponibles sobre IPv6, incluyendo <a href="http://www.debian-administration.org/users/Steve/weblog/202">Debian Administration</a>, pero la mayoría de los usuarios domésticos no pueden acceder a estos servicios. Si deseas ver las posibilidades de IPv6 en internet, no debería ser complicado, aunque...</p>
+<p><!--break--></p>
+<p>Una de las formas más habituales de obtener acceso a IPv6 es mediante 6to4. Esto funciona perfectamente si tienes una ip estatica. La configuración es tan sencilla como:</p>
+<ul>
+<li><a href="http://tldp.org/HOWTO/Linux+IPv6-HOWTO/configuring-ipv6to4-tunnels.html">http://tldp.org/HOWTO/Linux+IPv6-HOWTO/configuring-ipv6to4-tunnels.html</a></li>
+</ul>
+<p>La configuración descrita ahí es lo suficientemente simple como para ser automatizada, puedes añadir lo siguiente <em>/etc/init.d/ipv6</em> si tienes el sistema adecuado:</p>
+<pre>
+#!/bin/sh
+#
+#  Auto-configure IPv6 support for the current host via
+# 6to4 tunnels
+#
+# Steve
+# --
+#
+
+#
+#  The local addresses
+#
+ipv4=$(ifconfig eth0  | grep "inet addr" | awk '{print $2}' | awk -F: '{print $2
+}')
+
+#
+#  The IPv6 address we generate
+#
+ipv6="$(printf "2002:%02x%02x:%02x%02x::1" `echo $ipv4 | tr "." " "`)"
+
+#
+#  Make sure we get an argument we recognise
+#
+if [ -z "$1" ]; then
+    echo "$0 [show|status|start|stop|test]"
+    exit
+fi
+
+case "$1" in
+    show)
+        echo "IPv4: $ipv4"
+        echo "IPv6: $ipv6"
+
+        ;;
+    start)
+        echo "Starting .."
+        /sbin/ip tunnel add tun6to4 mode sit ttl 30 remote any local $ipv4
+        /sbin/ip link set dev tun6to4 up
+        /sbin/ip -6 addr add $ipv6/16 dev tun6to4
+        /sbin/ip -6 route add 2000::/3 via ::192.88.99.1 dev tun6to4 metric 1
+        /sbin/ip -6 route add 2000::/3 via 2002:c058:6301::1 dev tun6to4 metric 1
+        ;;
+    stop)
+        echo "Stopping .."
+        /sbin/ip -6 route flush dev tun6to4
+        /sbin/ip link set dev tun6to4 down
+        /sbin/ip tunnel del tun6to4
+
+        ;;
+    test)
+        echo "Testing .."
+        ping6 -c 4 $ipv6
+
+        ;;
+    status)
+        if ( ip link |grep tun6to4 2&gt;/dev/null &gt;/dev/null ) ; then
+            echo "ipv6 seems to be up"
+        else
+            echo "ipv6 seems to be down"
+        fi
+        ;;
+     *)
+        echo "$0 [show|status|start|stop|test]"
+        ;;
+esac
+</pre>
+<p>Esta solución además de requerir una ip estática es más compleja de lo que debería ser. Debería ser más fácil acceder a internet IPv6 y esto es lo que el <a href="http://packages.debian.org/miredo">paquete miredo</a> ofrece.</p>
+<p><em>miredo</em> es un demonio Unix que implementa Teredo: túnel IPv6 sobre UDP a través de NAT (norma propuesta RFC 4380), en resumen, convierte tu red en un cliente IPv6.</p>
+<p>Para empezar instala el paquete:</p>
+<pre>
+# apt-get install miredo
+</pre>
+<p>Una vez hayas hecho esto espera unos segundos y podrás ver que tienes una nueva interfaz <em>tap</em></p>
+<pre>
+# /sbin/ifconfig
+br0       Link encap:Ethernet  HWaddr 00:1c:25:36:5f:f2
+...
+...
+
+eth0      Link encap:Ethernet  HWaddr 00:1c:25:36:5f:f2
+...
+...
+
+teredo    Link encap:UNSPEC  HWaddr 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+...
+</pre>
+<p>Ahora puedes ver el túnel end-point, puedes probarlo fácilmente con:</p>
+<pre>
+$  ping6 -c 3 www.debian-administration.org
+PING www.debian-administration.org(2002:5910:a162::1) 56 data bytes
+64 bytes from 2002:5910:a162::1: icmp_seq=1 ttl=56 time=169 ms
+64 bytes from 2002:5910:a162::1: icmp_seq=2 ttl=56 time=167 ms
+64 bytes from 2002:5910:a162::1: icmp_seq=3 ttl=56 time=167 ms
+
+--- www.debian-administration.org ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2010ms
+rtt min/avg/max/mdev = 167.446/168.201/169.509/1.042 ms
+</pre>
+<p>Ahora puedes ir con tu navegador a <a href="http://ipv6.google.com/">http://ipv6.google.com</a> o a cualquier otro <a href="http://www.ipv6.org/v6-www.html">sitio IPv6</a>.</p>

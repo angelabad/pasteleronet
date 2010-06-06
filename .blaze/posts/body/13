@@ -1,0 +1,179 @@
+Artículo traducido de: <a href="http://www.debian-administration.org/articles/528">http://www.debian-administration.org/articles/528</a>
+
+En nuestra <a href="http://www.pastelero.net/2007/07/08/12-introduccion-al-uso-de-puppet/">anterior introducción</a> a Puppet vimos como instalar el cliente y el servidor, también como configurar una pequeña red. Aquí demostraremos algunas de las cosas que podemos hacer con esa instalación.
+
+<!--break-->
+
+En nuestra anterior introducción a la instalación de Puppet vimos un fichero manifest muy simple, llamado site.pp. Este es el fichero de configuración principal puesto por Puppet en cualquier host controlado y es usado para especificar que acciones llevar a cabo. (¿Qué es un fichero manifest? Es una lista de instrucciones a llevar a cabo en un lenguaje simple, por eso no se llama script o programa).
+
+Algunas de las acciones que podemos llevar a cabo con Puppet son:
+<ul>
+	<li>Instalar / Desinstalar / Actualizar paquetes Debian.</li>
+	<li>Copiar ficheros desde el servidor central.</li>
+	<li>Aplicar cambios de configuración.</li>
+</ul>
+La última vez vimos el siguiente fichero manifest (guardado en /etc/puppet/manifest/site.pp):
+<pre># control de permisos en sudo
+class sudo {
+  file { "/etc/sudoers":
+    owner =&gt; root,
+    group =&gt; root,
+    mode =&gt; 440,
+  }
+}
+
+node default {
+  include sudo
+}</pre>
+En este ejemplo podemos ver las siguientes cosas:
+<ul>
+	<li>Definición de clase simple con "<em>class sudo ..</em>".</li>
+	<li>El uso del objeto "<em>file</em>".</li>
+	<li>Definición de acciones a llevar a cabo en todos los hosts.</li>
+</ul>
+Podemos pasar por alto la definición de class, es fácilmente comprensible en la <a href="http://www.reductivelabs.com/trac/puppet/wiki">documentación de Puppet</a>, pero la seccion <em>file</em> merece que la mencionemos.
+
+El tipo <em>file</em> es uno de los tipos que Puppet entiende, en un sentido parecido a como CFEngine entiene el uso de las secciones <em>copy:</em>. Nos permite hacer cosas como:
+<ul>
+	<li>Copiar ficheros desde el servidor central de Puppet.</li>
+	<li>Modificar permisos de arhcivos existentes.</li>
+	<li>Modificar el usuario y grupo de archivos existentes.</li>
+</ul>
+(La <a href="http://reductivelabs.com/trac/puppet/wiki/TypeReference">Puppet type reference</a> muestra más tipos con ejemplos de muchos de ellos.)
+<h3>Copiando ficheros</h3>
+Se pueden copiar ficheros desde el servidor maestro con tipo <em>file</em> que hemos visto. Hacer una copia es muy similar a la modificación de permisos que vimos en el ejemplo anterior. Todo lo que tenemos que hacer es incluir la fuente del fichero, que debe estar en algún sitio de nuestro servidor maestro.
+
+Anteriormente activamos el servidor Puppet, corriendo sobre el host <em>vain.my.flat</em>, para servir ficheros a los clientes desde el directorio <em>/etc/puppet/files</em>, así que continuaremos trabajando con este directorio.
+
+Asumiendo que queremos que todos los hosts de la LAN reciban una copia de <em>/etc/sudoers</em> desde nuestro servidor central, escribiremos lo siguiente en <em>/etc/puppet/manifest/site.pp</em>:
+<pre>#
+# Copia de /etc/sudoers desde el servidor maestro
+#
+class sudo {
+  file { "/etc/sudoers":
+    owner =&gt; root,
+    group =&gt; root,
+    mode =&gt; 440,
+    source =&gt; "puppet://vain.my.flat/files/etc/sudoers"
+  }
+}
+
+node default {
+  include sudo
+}</pre>
+Ahora sólo necesitamos colocar el fichero en el lugar correcto en el servidor maestro:
+<pre>root@vain:~# mkdir -p /etc/puppet/files/etc/
+root@vain:~# cp /etc/sudoers /etc/puppet/files/etc/</pre>
+Esto asegurará que que el fichero sudoers estará disponible para compartir y puede ser instalado sobre todas las máquinas.
+
+Si quiere ejecutar una acción después de copiar el fichero, pero sólo si este ha sido modificado, puede hacer algo como esto:
+<pre>class aptsetup {
+  file { "/etc/apt/sources.list":
+    owner =&gt; root, group =&gt; root, mode =&gt; 644
+    source =&gt; "puppet://puppet/files/etc/apt/sources.list.etch"
+  }
+
+  exec { subscribe-echo:
+    command   =&gt; "/usr/bin/apt-get -q -q update",
+    logoutput   =&gt; false,
+    refreshonly =&gt; true,
+    subscribe   =&gt; file["/etc/apt/sources.list"]
+  }
+}</pre>
+Ahora con sólo poner "<em>include aptsetup</em>" en la definición de nuestro(s) nodo(s) recibirá una copia del fichero <em>sources.list</em> desde el servidor. Si éste fichero ha sido actualizado en el servidor, el host recibirá la copia nueva y automáticamente ejecutará "<em>apt-get update</em>".
+<h3>Incluyendo clases</h3>
+Como hemos visto hastat ahora todo se incluia en el fichero site.pp. De esta forma enseguida se volverá inmanejable, así que es recomendable dividir tu configuración en pequeños ficheros de clases.
+
+Un <em>site.pp</em> podría ser como esta:
+<pre>import "classes/*.pp"
+
+node default {
+  include sudoers
+  include aptsetup
+}</pre>
+Ahora podemos crear los ficheros "<em>/etc/puppet/manifest/classes/sudo.pp</em>" y "<em>/etc/puppet/manifest/classes/aptsetup.pp</em>" con el contenido que vimos antes.
+<h3>Definiendo los nodos</h3>
+Algo aparente en nuestro ejemplo es que no hemos dividido la configuración para poder manjear situaciones más complicadas, como controlar cada host por separado. De momento sólo hemos visto el uso de "<em>node defatul</em>" que significa que las acciones serán llevadas a cabo en <em>todos</em> los hosts que usan este servidor.
+
+Aqui tenemos un ejemplo mas complicado para el control de dos máquinas (<em>etch-builder.my.flat</em> and <em>sid-builder.my.flat</em>).
+
+Cada máquina obitiene un sources.list apropiado para ella, y algunas cosas comunes son aplicadas a las dos maquinas. Y todas las demas máquinas se configuran sin nombre:
+<pre>class sudo {
+  file { "/etc/sudoers":
+    owner  =&gt; root,
+    group  =&gt; root,
+    mode   =&gt; 440,
+    source =&gt; "puppet://vain.my.flat/files/etc/sudoers"
+  }
+}
+
+class common {
+  # Remove upstream sources.list
+  # We manage this in sources.list.d per distro
+  tidy { "/etc/apt/sources.list":
+    age =&gt; '0s',
+  }
+}
+
+class etch {
+  file{ "/etc/apt/sources.list.d/etch.list":
+    mode   =&gt; 644,
+    source =&gt; "puppet://vain.my.flat/files/etc/apt/sources.etch"
+  }
+}
+
+class sid {
+  file{ "/etc/apt/sources.list.d/sid.list":
+    mode   =&gt; 644,
+    source =&gt; "puppet://vain.my.flat/files/etc/apt/sources.sid"
+  }
+}
+
+node default {
+  # all host get these actions
+  include sudo
+}
+
+node etch-builder inherits default {
+  include common
+  include etch
+}
+node sid-builder inherits default {
+  include common
+  include sid
+}</pre>
+<h3>Haciendo Puppet más parecido a CFEngine</h3>
+Algunas acciones muy familiares para la gente de CFEngine no están presentes, como por ejemplo, <em>DeleteLinesMatching</em> y <em>AppendIfNoSuchLine</em>, que nos permiten una manipulación simple de ficheros de texto.
+
+Gracias esta página del <a href="http://reductivelabs.com/trac/puppet/wiki/SimpleTextRecipes">wiki de Puppet</a> podremos encontrar soluciones simples para la mayoría de los casos.
+
+Creamos el fichero <em>/etc/puppet/manifests/classes/cfengine.pp</em> con el siguiente contenido:
+<pre>define append_if_no_such_line($file, $line, $refreshonly = 'false') {
+  exec { "/bin/echo '$line' &gt;&gt; '$file'":
+    unless      =&gt; "/bin/grep -Fxqe '$line' '$file'",
+    path        =&gt; "/bin",
+    refreshonly =&gt; $refreshonly,
+  }
+}
+
+define delete_lines($file, $pattern) {
+  exec { "sed -i -r -e '/$pattern/d' $file":
+    path   =&gt; "/bin",
+    onlyif =&gt; "/bin/grep -E '$pattern' '$file'",
+  }
+}</pre>
+Ahora en su <em>site.pp</em> puede hacer lo siguiente:
+<pre>import "classes/*.pp"
+
+node default {
+  delete_lines{ removecfengine:
+    file    =&gt; "/etc/motd",
+    pattern =&gt; "^.*CFEngine.*$" }
+
+  append_if_no_such_line{ motd:
+    file =&gt; "/etc/motd",
+    line =&gt; "Configured with Puppet!"}
+}</pre>
+Cerramos la segunda parte de esta introducción a Puppet aquí, sólo hemos visto el principio de lo que Puppet puede hacer, así que si está interesado en aprender más le aconsejo que eche un vistazo en la documentación del <a href="http://reductivelabs.com/trac/puppet/wiki">wiki de Puppet</a>.
+
+El <a href="http://puppet.reductivelabs.com/support.php">canal IRC</a> es amigable y buen sitio para recibir ayuda!

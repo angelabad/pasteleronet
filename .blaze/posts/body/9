@@ -1,0 +1,66 @@
+Articulo traducido de: <a href="http://www.debian-administration.org/articles/511">http://www.debian-administration.org/articles/511</a>
+
+La última semana, tras un fallo de disco, tuve que reinstalar un servidor. Este viejo servidor llevaba sirviendo numerosos dominios los últimos 4 años y necesitaba mantenimiento urgente. Me aseguré de anotar todos los pasos relacionados con la implementación de un filtro Antivirus y Antispam para el servidor de  correo desde el inicio, y este artículo es el resultado.
+
+<!--break--><strong>Instalar Debian 'Sarge'</strong>
+
+1. Obtenga Debian GNU/Linux 3.1 'Sarge'
+
+Por supuesto lo primero de todo es tener un servidor corriendo Debian 'Sarge'. De todas formas, todo lo detallado aquí también funcionaría con 'Woody', 'Sarge' es la recomendada, y Etch pronto la reemplazará.
+
+<strong>Paquetes adicionales</strong>
+
+2. Instale los siguientes paquetes de los repositorios de Debian a traves de apt-get:
+<pre># apt-get install exim4-daemon-heavy
+# apt-get install clamav-daemon
+# apt-get install sa-exim
+# apt-get install spamassassin spamc</pre>
+Trás la instalación de los paquetes, necesitamos hacer algunos cambios en los ficheros de configuración.
+
+<strong>Configuración de Spamassassin</strong>
+
+3. <em>/etc/default/spamassassin</em> Cambie el parámetro ENABLED a:
+<pre>ENABLED=1</pre>
+<strong>Configuración del grupo de Exim</strong>
+
+4. <em>/etc/group</em> Añada el usuario clamav al grupo Debian-exim. Esto permitirá a clamav-daemon leer y escribir en los directorios de Exim4. Exim4 necesita quitar el mime a los archivos adjuntos, guardarlos en un directorio temporal y decirle a clamav-daemon que los escanee.
+<pre>Debian-exim:x:102:clamav</pre>
+<strong>Configuración de SA-Exim</strong>
+
+5. <em>/etc/exim4/sa-exim.conf</em> Localice las siguientes lineas:
+<pre>###
+SAEximRunCond: ${if and {{def:sender_host_address} {!eq {$sender_host_address}{127.0.0.1}} {!eq{$h_X-SA-Do-Not-Run:}{Yes}} } {1}{0}}
+#Remove or comment out the following line to enable sa-exim
+SAEximRunCond: 0
+###</pre>
+Ahora cambie SAEximRunCond a:
+<pre>SaEximRunCond: 1</pre>
+<strong>Ficheros de configuración de Exim4</strong>
+
+6. Modifique los archivos de configuración de Exim4
+
+Asegurese de que Exim4 está utilizando archivos de configuración "split" (p.e. multiples ficheros en /etc/exim4/conf.d/*). Ahora localice esos ficheros de configuración y haga los siguientes cambios.
+
+<strong>Personalizando los mensajes de reject en Exim4</strong>
+
+7. <em>/etc/exim4/conf.d/acl/40_exim4-config_check_data</em>
+
+Al final del fichero, justo antes del estado "accept", añada las siguientes lineas.
+<pre># Deny viruses.
+deny message = Message contains malware or a virus ($malware_name).
+log_message = $sender_host_address tried sending $malware_name
+demime = *
+malware = *</pre>
+<strong>Configuración de Camav para Exim4</strong>
+
+8. <em>/etc/exim4/conf.d/main/01_exim4-config_listmacrosdefs</em>
+
+En algún lugar al principio del fichero añada esta linea:
+<pre>av_scanner = clamd:/var/run/clamav/clamd.ctl</pre>
+<strong>Reinicie Exim4</strong>
+
+9. Reinicie el demonio Exim4
+<pre># /etc/init.d/exim4 restart</pre>
+Eche un vistazo a los ficheros de log de Exim4, en especial "paniclog", que procesa los emails. Los mensajes de error son bastante autoexplicativos y debería poder solucionar los errores.
+
+Buenas suerte!

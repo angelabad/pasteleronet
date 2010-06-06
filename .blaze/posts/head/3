@@ -1,0 +1,5 @@
+[header]
+  author = Angel Abad
+  date = 2006-08-26
+  tags = debian, monitorización, puppet, servidor
+  title = Usando Nagios para Monitorizar Redes

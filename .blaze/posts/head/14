@@ -1,0 +1,5 @@
+[header]
+  author = Angel Abad
+  date = 2008-05-05
+  tags = chroot, debian, openssh, servidor, sftp
+  title = OpenSSH SFTP chroot() con ChrootDirectory

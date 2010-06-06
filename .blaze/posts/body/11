@@ -1,0 +1,87 @@
+Artículo traducido de: <a href="http://www.debian-administration.org/articles/526">http://www.debian-administration.org/articles/526</a>
+
+Puppet es un sistema relativamente nuevo para la configuración y el mantenimiento de grandes redes de maquinas. Es similar a CFEngine, pero escrito en Ruby. En esta introduccion al trabajo con Puppet veremos como instalarlo, y ponerlo a funcionar en una pequeña LAN.
+
+<!--break-->
+
+En este artículo veremos la instalción del servidor central puppet sobre un ordenador así como la configuración de algunos nodos que serán controlados a través de él. Para referenciar a las máquinas las veremos de la siguiente manera:
+<ul>
+	<li><strong>vain.my.flat</strong>: Este es el servidor Puppet responsable de la configuración de cada una de las otras máquinas.</li>
+	<li><strong>yours.my.flat</strong>: Un cliente simple.</li>
+	<li><strong>etch-builder.my.flat</strong>: Un cliente simple.</li>
+</ul>
+<strong>Nota</strong>: Para que el cliente y el servidor puppet puedan comunicarse asegurese que el puerto 8140 está abierto entre los dos sistemas. Si está usando un firewall le recomiendo que el cliente sólo acepte conexiones desde el servidor a través de este puerto.
+<h3>Instalación del servidor</h3>
+La instalación del servidor es tan simple como:
+<pre>root@vain:~# apt-get install puppetmaster</pre>
+Esto instalará el servidor, pero fallará al iniciarse porque no tenemos el manifest instalado. Esto no es importante de momento.
+
+Cuando queramos usar el servidor realmente, querremos que:
+<ul>
+	<li>Sirva ficheros que puedan ser copiados en los clientes.</li>
+	<li>Tener una lista de acciones y clientes en donde aplicarlas.</li>
+</ul>
+Por defecto el servidor de ficheros está desactivado, asi que necesitamos arreglar esto actualizando el fichero <em>/etc/puppet/fileserver.conf</em>. En mi caso quiero servir ficheros a la red 192.168.1.x, así que actualizaré este fichero para que contenga:
+<pre>[files]
+  path /etc/puppet/files
+  allow 192.168.1.0/24</pre>
+Esto significa que cualquier ordenador de la red 192.168.1.0/24 puede pedir ficheros situados en /etc/puppet/files en el servidor.
+
+El siguiente paso es crear el esqueleto del fichero manifest:
+<pre>root@vain:~# mkdir -p /etc/puppet/manifests/</pre>
+El fichero que busca puppet es site.pp, así que crearemos el fichero con el siguiente contenido:
+<pre># fixup permissions on sudo
+class sudo {
+    file { "/etc/sudoers":
+        owner =&gt; root,
+        group =&gt; root,
+        mode =&gt; 440,
+    }
+}
+
+node default {
+     include sudo
+}</pre>
+(Volveremos a este archivo en la segunda parte de nuestro artículo, donde explicaremos como controlar tus clientes usando puppet. Por el momento sólo nos aseguraremos de que el fichero <em>/etc/puppet/manifests/site.pp</em> es correcto y de que /etc/sudoers existe con los permisos correctos.)
+<h3>Instalación del cliente</h3>
+El siguiente trabajo es instalar el cliente puppet en cada ordenador que quieres que sea controlado. Para instalarlo ejecuta:
+<pre>root@vain:~# apt-get install puppet</pre>
+Una vez se haya instalado necesitarás configurar el cliente con el nombre de tu servidor maestro. Por defecto el cliente intentará buscar el nombre de host puppet y conectarse a él.
+
+En mi caso controlo el DNS así que sólo debo poner el nombre puppet.my.flat como alias al servidor real vain.my.flat, pero explicaré como cambiar el nombre manualmente.
+
+Actualiza el fichero <em>/etc/puppet/puppetd.conf</em> para que quede similar a lo siguiente:
+<pre>[puppetd]
+server = vain.my.flat
+logdir = /var/log/puppet
+vardir = /var/lib/puppet
+rundir = /var/run</pre>
+Una vez esté esto cambiado debes reiniciar el cliente:
+<pre>root@etch-builder:~# /etc/init.d/puppet restart
+Restarting puppet configuration management tool.
+root@etch-builder:~#</pre>
+<h3>Intercambio de claves</h3>
+El sistema puppet utiliza una pequeña autoridad certificadora para proteger la comunicación en la red y el control de acceso al servidor.
+
+De momento sólo hemos instalado un servidor con un archivo manifest simple y un cliente que conoce el nombre del servidor. Así que todavía no hemos configurado la autentificación.
+
+Tenemos un servidor escuchando a la espera de conexiones y un cliente que sabe donde pedir acciones. Pero nada pasrá porque el cliente no está autorizado a contactar con el servidor.
+
+Vamos a arreglar esto.
+
+En el servidor ejecutaremos el siguiente comando para ver que peticiones han sido recibidas y no son autorizadas:
+<pre>root@vain:~# puppetca  --list
+yours.my.flat
+etch-builder.my.flat</pre>
+Para autorizar estas peticiones deberemos ejecutar:
+<pre>root@vain:~# puppetca  --sign yours.my.flat
+Signed yours.my.flat
+root@vain:~# puppetca  --sign etch-builder.my.flat
+Signed etch-builder.my.flat</pre>
+Ahora todo está atado. El servidor aceptará conexiones de nuestros dos nodos, y estos se podrán conectar y ejecutar el contenido del fichero <em>site.pp</em>. Si este fichero cambia en el servidor los clientes serán notificados cada 30 minutos y se actualizarán.
+
+Esto acaba con el proceso de instalación y configuración del servidor y cliente puppet. En el siguiente artículo explicaremos lo siguiente:
+<ul>
+	<li> Hacer puppet mas parecido a CFEngine.</li>
+	<li> Empezar a usar puppet para controlar tus clientes de una forma útil.</li>
+</ul>

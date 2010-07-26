@@ -1,0 +1,471 @@
+
+<p>
+Many of us are familiar with the use of Apache for hosting
+websites. It might not be the fastest webserver but it is
+extraordinarily popular, extremely flexible, and a great choice for
+most people. However there are times when it can struggle, and placing
+a proxy in front of it can be useful. 
+</p>
+
+<p>
+nginx is a very small, fast, and efficient HTTP server with a lot of
+built in smarts to allow it to work as a reverse proxy, and not just
+for HTTP, it also supports SMTP. 
+</p>
+
+<!--break-->
+
+<p>
+I've recently updated this site to change the way it works - as it has
+been struggling - and this brief introduction is mostly the
+documentation on the changes I made. 
+</p>
+
+<p>
+The site itself, like many, is made up of a mixture of static
+resources and dynamically generated content. In our case our dynamic
+content is produced a collection of Perl CGI scripts. The changes
+described in this brief introduction to using nginx would apply to any
+site that had a mixture of static & dynamic resources, so could apply
+equally well to a Ruby on Rails or PHP-based site. 
+</p>
+
+<p>
+Over the past couple of years I've noticed that Apache 2.x would
+perform well on an average day, but start to struggle and perform less
+well when under load. Apart from adding more memory to this host I
+wanted to change the setup to increase the number of connections and
+hits it could withstand. 
+</p>
+
+<p>
+My plan was:
+</p>
+
+<ul>
+  <li>Leave Apache's configuration as untouched as possible.</li>
+    <ul>
+      <li>In case there were problems I wanted to be able to revert
+          any changes easily.</li>
+    </ul>
+  <li>Leave Apache to serve all the dynamic content as it did
+      currently.</li>
+  <li>Place a dedicated smaller, faster, and simpler HTTP server to
+      serve static resources.</li>
+    <ul>
+      <li>With the expectation that this would leave Apache to handle
+          the rest of the traffic which it would be able to do without being
+          so distracted.</li>
+    </ul>
+</ul>
+
+<p>
+There are a several ways this plan could have been executed and the
+two most obvious were:
+</p>
+
+<h3>Shifting Resources Elsewhere</h3>
+
+<p>
+We could split the serving of static resources by moving them. For
+example rather than serving and hosting
+http://www.debian-administration.org/images/logo.png we could move
+that to a different domain, such as
+http://images.debian-administration.org/logo.png.
+</p>
+
+<p>
+We could have created another sub-domain "static." to host any other
+content, such as CSS and Javascript files.
+</p>
+
+<p>
+This would allow us to easily configure a second webserver to handle
+the static content (perhaps on a different host, but most likely on
+the same one). The downside to this approach would be the required
+updates to our site code, templates, and other files.
+</p>
+
+
+<h3>Introduce A Proxy</h3>
+
+<p>
+To avoid moving resources around, and the overhead this would entail,
+the most simple solution would be to place a proxy in front of
+Apache. This would examine the incoming HTTP request and dispatch it
+to either:
+</p>
+
+<ul>
+  <li>Apache if it were a request for /cgi-bin/</li>
+  <li>Another dedicated server for all static resources (e.g. *.gif,
+  *.png)</li>
+</ul>
+
+<p>
+The decision to use nginx was pretty simple, there are a few different
+proxies out there which are well regarded (including pound which we've
+previously introduced for simple load-balancing). nginx looked like
+the most likely candidate because it focuses upon being both a fast
+HTTP server and a proxy.
+</p>
+
+<p>
+By working as a proxy and a HTTP server this cuts down the software we
+must use. Had we chosen a dedicated proxy-only tool we'd have needed
+to have three servers running:
+</p>
+
+<ul>
+  <li>The proxy to receive requests.<li>
+  <ul>
+    <li>Apache2 for serving the dynamic content.</li>
+    <li>HTTP server for static content.</li>
+  </ul>
+</ul>
+
+<p>
+With nginx in place we have a simpler setup with only two servers running:
+</p>
+
+<ul>
+  <li>
+    nginx to accept requests and immediately serve static content.
+  </li>
+  <ul>
+    <li>
+      Apache to receive the dynamic requests that nginx didn't want to
+      handle.
+    </li>
+  </ul>
+</ul>
+
+<h3>Installing nginx</h3>
+
+<p>
+The installation of nginx was as simple as we'd expect upon a Debian
+GNU/Linux host:
+</p>
+
+<pre>
+# aptitude install nginx
+</pre>
+
+<p>
+Once installed the configuration files are all be located beneath
+the directory /etc/nginx. As with the Debian apache2 packages
+you're expected to place sites you'd like to be enabled into
+configuration files beneath a sites-enabled directory.
+</p>
+
+<p>
+We'll not dwell on the nginx configuration files too much - the
+main one is /etc/nginx/nginx.conf and is pretty readable and
+sensible. The only change we need to make is to remove the file
+/etc/nginx/sites-enabled/default.
+</p>
+
+<h3>Configuring nginx & apache2</h3>
+
+<p>
+Configuring nginx itself is very simple, and our actual setup will
+consist of two parts:
+</p>
+
+<ul>
+  <li>
+    Configuring nginx to listen upon port 80, and forward some
+    requests to Apache.
+  </li>
+  <li>
+    Changing the Apache configuration so that it no longer
+    listens upon *:80, instead another port will be used.
+  </li>
+
+<p>
+Our site is comprised of two virtual hosts our main main, and our
+planet. The latter site is by far the most simple one as it has no
+dynamic component to it, merely static files.
+</p>
+
+<p>
+The setup of the static site consists of creating a configuration
+file for it at /etc/nginx/sites-available/planet.conf with the
+following content:
+</p>
+
+<pre>
+#
+#  planet-debian-administration.org is 100% static, so nginx can
+# serve it all directly.
+#
+server {
+       listen :80;
+
+       server_name  planet.debian-administration.org;
+
+       access_log   /home/www/planet.debian-administration.org/logs/access.log;
+
+       root         /home/www/planet.debian-administration.org/htdocs/;
+}
+</pre>
+
+<p>
+This is sufficient for nginx to serve the virtual host
+planet.debian-administration.org from the directory
+/home/www/planet.debian-administration.org/htdocs - and log
+incoming requests to an appropriate file.
+</p>
+
+<p>
+The dynamic handling of our main site is a little more
+complex. The contents of the /etc/nginx/sites-enabled/d-a.conf
+configuration file I came up with look like this:
+</p>
+
+<pre>
+#
+#  This configuration file handles our main site - it attempts to
+# serve content directly when it is static, and otherwise pass to
+# an instance of Apache running upon 127.0.0.1:8080.
+#
+server {
+       listen :80;
+
+       server_name  www.debian-administration.org debian-administration.org;
+       access_log  /var/log/nginx/d-a.proxied.log;
+
+       #
+       # Serve directly:  /images/ + /css/ + /js/
+       #
+       location ^~ /(images|css|js) {
+               root   /home/www/www.debian-administration.org/htdocs/;
+               access_log  /var/log/nginx/d-a.direct.log ;
+       }
+
+       #
+       # Serve directly: *.js, *.css, *.rdf,, *.xml, *.ico, & etc
+       #
+       location ~* \.(js|css|rdf|xml|ico|txt|gif|jpg|png|jpeg)$ {
+               root   /home/www/www.debian-administration.org/htdocs/;
+               access_log  /var/log/nginx/d-a.direct.log ;
+       }
+
+       #
+       # Proxy all remaining content to Apache
+       #
+       location / {
+
+           proxy_pass         http://127.0.0.1:8080/;
+           proxy_redirect     off;
+
+           proxy_set_header   Host             $host;
+           proxy_set_header   X-Real-IP        $remote_addr;
+           proxy_set_header   X-Forwarded-For  $proxy_add_x_forwarded_for;
+
+           client_max_body_size       10m;
+           client_body_buffer_size    128k;
+
+           proxy_connect_timeout      90;
+           proxy_send_timeout         90;
+           proxy_read_timeout         90;
+
+           proxy_buffer_size          4k;
+           proxy_buffers              4 32k;
+           proxy_busy_buffers_size    64k;
+           proxy_temp_file_write_size 64k;
+       }
+}
+
+</pre>
+
+<p>
+This configuration file has several points of interest, but for
+full details you'll need to consult the nginx documentation. The
+most obvious sections of interest are the rules which determine
+which content is handled directly by nginx.
+</p>
+
+<p>
+You'll see that we have two different rules:
+</p>
+
+<ul>
+  <li>
+    A rule which says anything beneath /images should be handled
+    directly.
+  </li>
+  <li>
+    Another rule which says regardless of location *.png will always
+    be handled directly.
+  </li>
+</ul>
+
+<p>
+These rules might seem redundant but it is better to be explicit about
+our intentions. The rest of the file contains settings for the
+forwarding of all other requests to the local Apache instance - I made
+no changes to the sample configuration here.
+</p>
+
+<p>
+The other point to note is that I log incoming requests to two files,
+depending on whether they were proxied to our Apache instance or
+handled directly. This isn't really required but it gives an idea of
+which requests are going where.
+</p>
+
+<p>
+With these two configuration files in place we're almost done, we just
+need to ensure that Apache is no longer going to claim port 80 as its
+own. We do this by modifying /etc/apache2/ports.conf to read:
+</p>
+
+<pre>
+NameVirtualHost *:8080
+Listen 8080
+
+<IfModule mod_ssl.c>
+    # SSL name based virtual hosts are not yet supported, therefore no
+    # NameVirtualHost statement here
+    Listen 443
+</IfModule>
+</pre>
+
+<p>
+This will ensure that Apache binds to port 8080 and not port 80. We
+then make matching changes to our virtual host files. For example
+/etc/apache2/sites-enabled/debian-administration.org:
+</p>
+
+<pre>
+#  Debian Administration domain.
+#
+<VirtualHost *:8080>
+        ServerAdmin webmaster@debian-administration.org
+        ServerName www.debian-administration.org
+        DirectoryIndex index.cgi index.html
+
+        DocumentRoot /home/www/www.debian-administration.org/htdocs/
+        ...
+        ...
+</pre>
+
+<p>
+With these changes in place we can switch to using our proxy:
+</p>
+
+<pre>
+/etc/init.d/apache2 stop
+/etc/init.d/nginx start
+/etc/init.d/apache2 start
+</pre>
+
+<p>
+(We stop apache2 so that port 80 becomes available, then start nginx
+which will use that port, and finally restart apache2 so that it will
+be available on port 8080 such that nginx can talk to it.)
+</p>
+
+<p>
+Note: In this example Apache is listening on port 8080 on all IPs
+rather than just 127.0.0.1:8080 - I later changed this.
+</p>
+
+<h3>Problems Experienced</h3>
+
+<p>
+Once deployed there were two problems which were initially
+apparent:
+</p>
+
+<ul>
+  <li>
+    Lack of IPv6 support.
+  </li>
+  <li>
+    Incorrect IP addresses being logged.
+  </li>
+</ul>
+
+<p>
+Unfortunately the version of nginx available in the Lenny release
+of Debian did not contain any IPv6 support - which was a real
+shame as we've been running upon IPv6 for quite some time
+now. (About 3% of our visitors use native IPv6, including myself,
+and I didn't want to lose them.)
+</p>
+
+<p>
+The solution to the IPv6 problem was to backport the package
+available in Debian's unstable distribution (a painless
+process). Once this was done the nginx configuration file could be
+updated to read:
+
+<pre>
+# Listen on both IPv6 & IPv4.
+listen [::]:80;
+</pre>
+
+<p>
+The second problem was related to how Apache received all
+connections from the outside world via our local host via
+nginx. This meant it would believe each incoming request was made
+from the IP address 127.0.0.1.
+</p>
+
+<p>
+Happily there was a very simple solution to this problem, the
+libapache2-mod-rpaf module for Apache 2.x which will allow the
+real IP address to be visible to our side, and the logfiles.
+</p>
+
+<p>
+The RPAF module takes the IP address which initiated the original
+connection, and which nginx placed in a X-Forwarded-For header,
+and ensures this IP address is available to our dynamic scripts &
+apache logfiles.
+</p>
+
+<p>
+Applying this solution was as simple as:
+</p>
+
+<pre>
+aptitude install libapache2-mod-rpaf
+a2enmod rpaf
+/etc/init.d/apache2 force-reload
+</pre>
+
+<p>
+Once this was done our incoming connections were logged correctly,
+and our code would see the real IP address for each connection
+rather than the loopback address of the proxy host.
+</p>
+
+<h3>Potential Changes</h3>
+
+<p>
+As you can see from the posted configuration files all incoming
+requests on port 80 will be either handled directly or proxied -
+but I made no changes to the handling of port 443, or SSL
+requests.
+</p>
+
+<p>
+We've offered SSL for a significant length of time but few
+visitors use it, so I elected to leave this setup as-is.
+</p>
+
+<p>
+If the situation changes then nginx will be updated to proxy SSL
+requests too - it has support for this, as a perusal of the
+documentation will suggest.
+</p>
+
+<p>
+So far it is too early to tell if this solution has increased our
+scalability, but I'm very optimistic. Resource usage has certainly
+fallen and the combination of nginx and apache is a good one that
+isn't too complex.
+</p>

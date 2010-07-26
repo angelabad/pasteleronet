@@ -1,4 +1,5 @@
-2010-07-26  Angel Abad  <angelabad@gmail.com>
+2010-07-26  Angel Abad  <angel@goa.goa>
 
+	* Update .gitignore to ignore .blaze/temp file
 	* Changelog: Created info files
 

@@ -1,16 +1,17 @@
 
 <p>
-Many of us are familiar with the use of Apache for hosting
-websites. It might not be the fastest webserver but it is
-extraordinarily popular, extremely flexible, and a great choice for
-most people. However there are times when it can struggle, and placing
-a proxy in front of it can be useful. 
+La mayoría de nosotros estamos familiarizados con el uso de Apache
+para albergar sitios web. Puede que no sea el servidor web más rápido,
+pero es extremadamente popular, extremadamente flexible y una buena
+elección para la mayoría de la gente. Aún así hay ocasiones en las que
+puede ponernos en un apuro, y configurar un proxy delante nos puede
+venir muy bien.
 </p>
 
 <p>
-nginx is a very small, fast, and efficient HTTP server with a lot of
-built in smarts to allow it to work as a reverse proxy, and not just
-for HTTP, it also supports SMTP. 
+<a href="http://wiki.nginx.org/">nginx</a> es un servidor HTTP muy
+ligero, rápido y eficiente y muy bien pensado para trabajar como proxy
+inverso, y no solo para HTTP, sino que también soporta SMTP.
 </p>
 
 <!--break-->

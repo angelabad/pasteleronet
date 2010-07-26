@@ -1,5 +1,6 @@
 2010-07-26  Angel Abad  <angelabad@gmail.com>
 
+	* Translated "Acelerando websites dinámicos a través de un proxy Nginx"
 	* Raw import of Speeding up dynamic websites via an nginx proxy article
 	* Update .gitignore to ignore .blaze/temp file
 	* Changelog: Created info files

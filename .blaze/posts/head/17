@@ -1,4 +1,5 @@
 [header]
   author = Angel Abad
   date = 2010-07-26
+  tags = debian, servidor
   title = Acelerando websites dinámicos a través de un proxy Nginx

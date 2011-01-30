@@ -1,0 +1,75 @@
+
+<p>
+<script type="text/javascript"><!--
+google_ad_client = "pub-8023391092618680";
+/* Noticia principal */
+google_ad_slot = "2583678664";
+google_ad_width = 468;
+google_ad_height = 60;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</p>
+
+<p>
+  Artículo traducido de: <a
+ href="http://www.debian-administration.org/article/664/Creating_dynamic_volumes_with_loop_devices">Debian
+ Administration</a>
+</p>
+
+<p>
+  Ultimamente mi interés se ha centrado en el control de
+  volumenes. Con GNU/Linux, LVM2 parece ser la única solución (a no
+  ser que decidamos usar un sistema de archivos para cluser), así que
+  empezé a leer sobre LVM. Leyendo descubrí que es posible levantar un
+  dispositivo loop como PV y esto levantó mi curiosidad: ¿No podría
+  simplemente utilizar un fichero <emphasis>sparse</emphaisis> con un
+  único gran agujero y dejar a mi ext4 escribir cuando en realidad está
+  escribiendo en el dispositivo loop?
+</p>
+
+<!-- break -->
+
+<p>
+  Así que como pequeña prueba de concepto, he creado un volumen con:
+</p>
+
+<pre>
+# dd if=/dev/zero of=FILE bs=X seel=Y-1 count=1
+# losetup /dev/loop0 FILE
+# mke2fs /dev/loop0
+# mount /dev/lopp0 /mnt
+</pre>
+
+<p>
+  Y después de estos pasos chequeamos en uso de disco con
+  <command>du-k FILE</command> y el uso del sistema de ficheros con
+  <commmand>df -k /mnt</command>.
+</p>
+
+<p>
+  ¿Sorprendid@? Funciona!
+</p>
+
+<p>
+  Para asegurarme con el testing, empecé a copiar archivos a mi
+  "volumen dinámico", viendo como iba creciendo, y finalmente
+  desmontandolo.
+</p>
+
+<p>
+  Me funcionó bien, así que a partir de ahora usaré este pequeño
+  "truco" con los contenedores GNU/Linux con los que estoy trabajando
+  ultimamanete, porque
+</p>
+<ul>
+  <li>permite incrementar el tamaño del volumen dinámicamente.</li>
+  <li>se puede establecer un límite al volumen.</li>
+</ul>
+
+<p>
+  Ah, y: si usamos ext3/4 como sistema base, ext2 es suficiente en
+  nuestro dispositivo loop. ¿Por que hacer el journaling 2 veces?
+</p>

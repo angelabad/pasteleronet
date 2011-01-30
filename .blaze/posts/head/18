@@ -1,5 +1,5 @@
 [header]
   author = Angel Abad
   date = 2011-01-30
-  tags = debian url loop montar dispositivo volumen
-  title = Creando volumenes dinámicos con distupositivos loop
+  tags = debian, dispositivo, loop, montar, url, volumen
+  title = Creando volumenes dinámicos con dispositivos loop

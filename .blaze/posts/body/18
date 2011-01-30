@@ -23,11 +23,11 @@ src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
   Ultimamente mi interés se ha centrado en el control de
   volumenes. Con GNU/Linux, LVM2 parece ser la única solución (a no
   ser que decidamos usar un sistema de archivos para cluser), así que
-  empezé a leer sobre LVM. Leyendo descubrí que es posible levantar un
-  dispositivo loop como PV y esto levantó mi curiosidad: ¿No podría
-  simplemente utilizar un fichero <emphasis>sparse</emphaisis> con un
-  único gran agujero y dejar a mi ext4 escribir cuando en realidad está
-  escribiendo en el dispositivo loop?
+  empezé a leer sobre LVM. Descubrí que es posible levantar un
+  dispositivo loop como PV y esto atrajo mi curiosidad: ¿No podría
+  simplemente utilizar un fichero <b>sparse</b> como un
+  gran agujero y ecribir en él como si fuese un dispositivo ext4
+  cuando en realidad es un dipositivo loop?
 </p>
 
 <!-- break -->
@@ -44,7 +44,7 @@ src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
 </pre>
 
 <p>
-  Y después de estos pasos chequeamos en uso de disco con
+  Y después de estos pasos chequeamos el uso de disco con
   <command>du-k FILE</command> y el uso del sistema de ficheros con
   <commmand>df -k /mnt</command>.
 </p>

@@ -1,0 +1,69 @@
+
+<p>
+Por fin he acabado con el proceso de <a
+href="https://nm.debian.org/nmstatus.php?email=angelabad%40gmail.com">New
+Maintainer</a>, así que después de un proceso un poco accidentado y
+largo por fin soy Debian Developer, login <a
+href="http://qa.debian.org/developer.php?login=angel">angel@debian.org</a>
+</p>
+
+<!-- break -->
+
+<p>
+Ahora que tengo permisos para subir paquetes al archivo de Debian, mi
+principal objetivo es el mismo que en <a
+href="https://launchpad.net/~angelabad">Ubuntu</a>, esponsorizar cambios de gente
+que esté empezando, sobre todo en el <a
+href="http://pkg-perl.alioth.debian.org/">Perl Group</a>. La mayoría de mi
+experiencia empaquetando software es gracias a este grupo.
+</p>
+
+<p>
+Mi segundo objetivo, ahora que puedo hacer <a
+href="http://wiki.debian.org/NonMaintainerUpload">NMUs</a> es el plan
+<a href="http://upsilon.cc/~zack/hacking/debian/rcbw/">rcbw</a> de
+Stefano Zacchiroli, e intentar resolver todos los Release Critical
+Bugs que pueda, hay varios developers trabajando en ello, el objetivo
+es conseguir una distribución mas estable si cabe y unos ciclos de
+publicación más rápidos.
+</p> 
+
+<p>
+Y un poco de auto-bombo, mis números hasta ahora:
+  <ul>
+    <li>
+      <a href="https://launchpad.net/~angelabad/+uploaded-packages">483 paquetes en Ubuntu</a>
+    </li>
+    <li>
+      <a href="https://bugs.launchpad.net/~angelabad/+bugs?field.searchtext=&orderby=-importance&search=Search&field.status%3Alist=NEW&field.status%3Alist=OPINION&field.status%3Alist=INVALID&field.status%3Alist=WONTFIX&field.status%3Alist=EXPIRED&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.status%3Alist=FIXRELEASED&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&assignee_option=any&field.assignee=&field.bug_reporter=&field.bug_commenter=&field.subscriber=&field.structural_subscriber=&field.tag=&field.tags_combinator=ANY&field.status_upstream-empty-marker=1&field.has_cve.used=&field.omit_dupes.used=&field.omit_dupes=on&field.affects_me.used=&field.has_patch.used=&field.has_branches.used=&field.has_branches=on&field.has_no_branches.used=&field.has_no_branches=on&field.has_blueprints.used=&field.has_blueprints=on&field.has_no_blueprints.used=&field.has_no_blueprints=on">Implicado en 977 bugs en Ubuntu</a>
+    </li>
+    <li>
+      <a href="http://qa.debian.org/developer.php?login=angelabad%40gmail.com">78 paquetes en Debian</a>
+    </li>
+    <li>
+      <a href="http://bugs.debian.org/cgi-bin/pkgreport.cgi?submitter=angel%40debian.org">Parches reportados en Debian</a>
+    </li>
+  </ul>
+</p>
+
+<p>
+De paso animar a la gente a que colabore, cualquiera que esté
+interesad@ en subir cambios tanto a <a
+href="http://www.debian.org">Debian</a> como a <a
+href="http://www.ubuntu.com">Ubuntu</a> o que se encuentre perdid@ en
+como empezar, puede contactar conmigo y le echaré una mano en todo lo
+que pueda.
+  <ul>
+    <li><a href="mailto:angel@debian.org">angel@debian.org</a></li>
+    <li><a
+    href="mailto:angelabad@ubuntu.com">angelabad@ubuntu.com</a></li>
+  </ul>
+</p>
+
+<p>
+Por último agradecer a toda la gente que ha hecho posible que llegue a
+Debian Developer, en especial a la gente del Perl Group, Zuzen, Amaya,
+Gunnar, Txoiu, Patrick, Jan, Enrico, Gregor, Salvatore.... y alguno
+que seguro que me dejo en el tintero y por supuesto a los compañeros
+de Ubuntu.
+</p>

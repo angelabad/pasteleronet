@@ -1,0 +1,750 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+                      "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="txt/html; charset=UTF-8">
+  <meta name="Generator" content="BlazeBlogger 1.2.0">
+  <meta name="Date" content="Mon Jan  7 16:49:48 2019">
+  <link rel="stylesheet" href="../../../pastelero.css" type="text/css">
+  <link rel="alternate" href="../../../index.rss" title="RSS Feed" type="application/rss+xml">
+  <title>Usando dmcrypt para encriptar particiones</title>
+</head>
+
+<body>
+
+<div id="wrap">
+  <div id="header">
+    <h1 id="logo-text"><a href="../../../">Pastelero.net</a></h1>
+
+    <!-- Remove subtitle -->
+    <!-- <p id="slogan">yet another blog</p> -->
+
+    <div id="top-menu">
+      <p><a href="../../../">Inicio</a> | <a href="../../../index.rss">Feed</a></p>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="main">
+
+<h2 class="post">Usando dmcrypt para encriptar particiones</h2>
+<div class="information">
+   <span class="date">2006-09-03</span> por <span class="author">Angel Abad</span>, etiquetado como <span class="tags"><a href="../../../tags/debian">debian</a></span>
+</div>
+
+<p>
+Artículo traducido de: <a
+href="http://deb.riseup.net/storage/encryption/dmcrypt/">http://deb.riseup.net/storage/encryption/dmcrypt/</a>
+</p>
+
+<p>
+Aquí se explica como usar dm-crypt. Dm-crypt es más rápido que cryptoloop y mas fácil que loop-aes.
+Eche un vistazo de todas formas a cryptoloop (obsoleto) o a <a
+href="http://deb.riseup.net/storage/encryption/dmcrypt/loop-aes">loop-aes</a>
+(más seguro, más rápido).
+</p>
+
+<!--break-->
+
+<h3>Desde el sitio web</h3>
+
+<p>
+<blockquote>Device-mapper es una nueva infraestructura en el kernel
+Linux 2.6 que provee una forma genérica para crear capas virtuales de
+dispositivos de bloques que puede ejecutar diferentes acciones sobre
+los dispositivos de bloques reales como striping, concatenación,
+espejo, snapshoting, etc... Device-mapper es usado por las
+herramientas LVM2 y EVMS2. dm-crypt es como un device-mapper que
+provee encriptación transparente de los dispositivos de bloques usando
+el nuevo cryptoapi del Linux 2.6. Las escrituras a este dispositivo
+serán encriptadas y las lecturas desencriptadas. Puede montar sus
+sistema de ficheros como siempre. Pero sin la clave usted no podrá
+acceder a sus datos. Esto es básicamente lo mismo que cryptoloop pero
+su código es mucho más limpio y una interfaz de configuración más
+flexible. El formato on-disk es también compatible.</blockquote>
+</p>
+
+<ul>
+<li>
+sitio web: <a
+href="http://www.saout.de/misc/dm-crypt/">www.saout.de/misc/dm-crypt/</a>
+</li>
+<li>
+wiki dm-crypt: <a
+href="http://www.saout.de/tikiwiki/">www.saout.de/tikiwiki/</a>
+</li>
+<li>
+velocidad de ciphers: <a
+href="http://fp.gladman.plus.com/cryptography_technology/aesr2/">fp.gladman.plus.com/cryptography_technology/aesr2/</a>
+</li>
+</ul>
+
+<h3>Instalar el kernel</h3>
+
+<p>
+El kernel-image 2.6 por defecto parece funcionar perfectamente. Si
+usted esta compilando el suyo propio, esto es lo que debe elegir:
+</p>
+
+<ul>
+	<li>Code maturity level options  ---&gt;
+<ul>
+	<li><strong>on:</strong> Prompt for development and/or incomplete code/drivers</li>
+</ul>
+</li>
+	<li>General setup ---&gt;
+<ul>
+	<li><strong>on:</strong> Support for hot-pluggable devices</li>
+</ul>
+</li>
+	<li>Device Drivers &gt; Multi-device support (RAID and LVM).
+<ul>
+	<li><strong>on:</strong> Device mapper support</li>
+	<li><strong>on:</strong> Crypt target support</li>
+</ul>
+</li>
+	<li>Cryptographic options  ---&gt;
+<ul>
+	<li><strong>on:</strong> AES cipher algorithms</li>
+</ul>
+</li>
+</ul>
+
+<p>
+Los drivers de desarrollo deben estar activados, sino no podrá activar
+el soporte crypt target para device mapper. Habilitando el soporte
+para dispositivos hot-pluggable se contruye udev en el kernel, que
+hace las cosas más fáciles. Si activa udev, asegúrese de no activar
+devfs.
+</p>
+
+<p>
+Con su nuevo kernel corriendo, chequee que device mapper existe:
+</p>
+
+<pre>
+# ls -L /dev/mapper/control
+</pre>
+
+<p>
+Si no tiene el dispositivo mapper, instalando el paquete dmsetup lo
+creará para usted.
+</p>
+
+<p>
+También chequee si AES está soportado (o cualquier otro cipher que
+decida usar):
+</p>
+
+<pre>
+#cat /proc/crypto
+</pre>
+
+<p>
+debería devolver:
+</p>
+
+<pre>
+name            : aes
+module         : aes
+type              : cipher
+blocksize       : 16
+min keysize   : 16
+max keysize  : 32
+</pre>
+
+<p>
+Si está corriendo crypto como módulos, no verá nada cuando mire
+/proc/crypto hasta que el módulo no esté cargado. cryptsetup cargará
+los módulos que necesite cuando esté corriendo. Si quiere cargar el
+módulo manualmente, usando el kernel de debian 2.6.7, debería hacer
+esto:
+</p>
+
+<pre>
+# instmod /lib/modules/2.6.7-1-386/kernel/crypto/aes.ko
+</pre>
+
+<p>
+O simplemente:
+</p>
+
+<pre>
+# modprobe aes
+</pre>
+
+<h3>Instalar las herramientas de usuario</h3>
+
+<p>
+<em>dmsetup</em>
+</p>
+
+<p>
+Instale dmsetup, la libreria de espacio de usuario para el Device
+Mapper del kernel linux:
+</p>
+
+<pre>
+# apt-get install dmsetup
+</pre>
+
+<p>
+Al instalar este paquete se crearán los dispositivos mapper en caso de
+que no existan.
+</p>
+
+<p>
+Compruebe que el target crypt está soportado:
+</p>
+
+<pre>
+# dmsetup targets
+crypt            v1.0.0
+striped          v1.0.1
+linear           v1.0.1
+error            v1.0.1
+</pre>
+
+<p>
+(Si está usando un kernel basado en módulos, este se cargará cuando
+sea necesario).
+</p>
+
+<p>
+<em>cryptsetup</em>
+</p>
+
+<p>
+cryptsetup es una herramienta que facilita el uso de dm-crypt, así no
+tendrá que hacer las llamadas a dm-setup directamente.
+</p>
+
+<pre>
+# apt-get install cryptsetup
+</pre>
+
+<p>
+<em>Siguientes pasos</em>
+</p>
+
+<p>
+Ahora debe decidir si desea utilizar una particion o un fichero loop
+como dispositivo que usará el device mapper.
+</p>
+
+<h3>Particiones encriptadas</h3>
+
+<p>
+Estas son las instrucciones para usar dm-crypt para crear un sistema
+de ficheros en una partición. Vea mas abajo para como hacerlo con un
+fichero loopback.
+</p>
+
+<p>
+<em>Creando la partición encriptada</em>
+</p>
+
+<p>
+Para crear nuestra partición encriptada, debemos seguir tres pasos:
+</p>
+
+<ul>
+	<li>ejecutar cryptsetup en la partición, esto crea el dispositivo device mapper con el target 'crypt'.</li>
+	<li>Crear el sistema de ficheros en nuestro nuevo dispositivo.</li>
+	<li>montar nuestro dispositivo.</li>
+</ul>
+
+<p>
+En nuestro ejemplo, convertiremos el volumen físico /dev/sda9 en un
+volumen lógico (encriptado) en /dev/mapper/maildir (la etiqueta es
+'maildir') y lo montaremos en /var/maildir.
+</p>
+
+<p>
+Cree el volumen lógico (con el binario cryptsetup):
+</p>
+
+<pre>
+# cryptsetup -y create maildir /dev/sda9
+</pre>
+
+<p>
+o cree el volumen lógico (con el script cryptsetup que viene con el
+paquete hashalot):
+</p>
+
+<pre>
+# cryptsetup -c aes -h ripemd160 -s 32 create maildir /dev/sda9
+</pre>
+
+<p>
+confirme que está funcionando:
+</p>
+
+<pre>
+#dmsetup ls
+maildir (254, 0)
+</pre>
+
+<p>
+cree el sistema de ficheros:
+</p>
+
+<pre>
+# mkfs.reiserfs /dev/mapper/maildir
+</pre>
+
+<p>
+monte el sistema de ficheros:
+</p>
+
+<pre>
+# mount /dev/mapper/maildir /var/maildir
+</pre>
+
+<p>
+<em>Uso en el mundo real</em>
+</p>
+
+<p>
+Cada vez que reiniciemos, necesitamos volver a ejecutar crypsetup e
+introducir la misma contraseña. En caso de introducir la contraseña
+incorrectamente, el dispositivo encriptado no se podrá montar y
+necesitaremos destruirlo y volver a intentarlo. No se preocupe: si no
+formateamos el dispositivo creado con la contraseña incorrecta, no se
+perderá ningún dato.
+</p>
+
+<p>
+Hay dos formas de hacer esto: en el inicio o ejecutando un script
+manualmente.
+</p>
+
+<p>
+<em>En el inicio</em>
+</p>
+
+<p>
+Puede editar /etc/fstab para tener /dev/mapper/maildir montado en
+/var/maildir. Esto sólo funcionará si cryptsetup está corriendo antes
+de que las particiones sean leídas por /etc/fstab.
+</p>
+
+<p>
+/etc/init.d/cryptinit:
+</p>
+
+<pre>
+if [ -b /dev/mapper/maildir ]; then
+/usr/bin/cryptsetup remove maildir
+fi
+/usr/bin/cryptsetup create maildir /dev/sda9
+</pre>
+
+<pre>
+# cd /etc/rcS.d
+# ln -s ../init.d/cryptinit S08cryptinit
+</pre>
+
+<p>
+<em>A mano</em>
+</p>
+
+<p>
+Simplemente ejecute este script para tener la partición funcionando:
+</p>
+
+<pre>
+if [ -b /dev/mapper/maildir ]; then
+/usr/bin/cryptsetup remove maildir
+fi
+/usr/bin/cryptsetup create maildir /dev/sda9
+mount /dev/mapper/maildir /var/maildir
+</pre>
+
+<h3>Particiones home dmcrypt</h3>
+
+<p>
+Para que pam monte su partición encriptada automáticamente en el
+login, por favor haga los siguientes cambios:
+</p>
+
+<pre>
+# apt-get install libpam-mount cryptsetup openssl
+</pre>
+
+<p>
+añada esto al final de /etc/pam.d/common-auth
+</p>
+
+<pre>
+auth	optional	pam_mount.so use_first_pass
+</pre>
+
+<p>
+y esto al final de /etc/pam.d/common-session
+</p>
+
+<pre>
+session 	optional	pam_mount.so
+</pre>
+
+<p>
+(alternativamente, puede añadir "@include common-pammount" al final de
+common-auth y common-session).
+</p>
+
+<p>
+añada esto a /etc/security/pam_mount.conf
+</p>
+
+<pre>
+volume elijah crypt - /dev/hda4 /home/elijah cipher=aes aes-256-ecb
+/home/elijah.key
+</pre>
+
+<p>
+(en este caso, 'elijah' es el nombre de usuario).
+</p>
+
+<p>
+cree /home/elijah.key:
+</p>
+
+<pre>
+echo "my dmcrypt password" | openssl aes-256-ecb &gt; /home/elijah.key
+</pre>
+
+<p>
+(esto no es buena idea porque tu password se queda en tu fichero de
+historial!) Esto te preguntará por tu password. Debes introducir la
+contraseña de tu <strong>usuario</strong>. Este comando encriptará tu
+contraseña dmcrypt (usada para montar la partición dmcrypt) con la
+contraseña de tu usuario. Cuando te logueas, pam-mount usa la password
+de tu usuario para desencriptar el fichero .key, entonces usa la
+password en el fichero .key para montar tu directorio home.
+</p>
+
+<p>
+Alternativamente, si las contraseña de tu usuario y la de dmcrypt es
+la misma, la linea en /etc/security/pam_mount.conf sería como esta:
+</p>
+
+<pre>
+volume elijah crypt - /dev/hda4 /home/elijah cipher=aes - -
+</pre>
+
+<p>
+Edite /etc/login.defs:
+</p>
+
+<pre>
+CLOSE_SESSIONS yes
+</pre>
+
+<p>
+(sino tu partición encriptada no se desmontará cuando hagas logout).
+</p>
+
+<p>
+Si está utilizando sarge o una versión mas antigua, necesita añadir el
+enlace simbólico /sbin/mount.crypt -&gt; /usr/bin/mount.crypt ya que
+ahora mount -t crypt funciona (debian bug: #267285).
+</p>
+
+<p>
+Tu home puede ser un fichero loopback. Siga las instrucciones normales para loopback y especifiquelo en /etc/sercurity/pam_mount.conf:
+<pre>volume elijah crypt - /home/home.img /home/elijah loop,cipher=aes aes-256-ecb /home/home.key</pre>
+La única diferencia con usar una partición real es que tu dispositivo
+fuente es el nombre del fichero loopback, y que añadimos 'loop' a
+nuestra lista de opciones.
+</p>
+
+<h3>Loopback encriptado</h3>
+
+<p>
+Aquí se explica como usar dm-crypt para crear un sistema de ficheros
+en un archivo loopback, esto significa almacenar un sistema de
+ficheros encriptado en un fichero individual. Es útil si usted no
+puede o no quiere encriptar su partición entera. Vea arriba para saber
+como encriptar una partición entera.
+</p>
+
+<p>
+Si usted ya tiene un sistema de ficheros, como tu directorio /home,
+que quiere encriptar pero no puede destruir el sistema de ficheros y
+recrearlo otra vez. O si sólo quiere encriptar parte de él, puede
+hacer con un fichero loopback encriptado con dm-crypt.
+</p>
+
+<p>
+<em>Instalación</em>
+</p>
+
+<p>
+Siga las mismas instrucciones que para las particiones, pero deténgase
+antes de instalar cryptsetup.
+</p>
+
+<p>
+<em>Crear el loopback</em>
+</p>
+
+<p>
+Debe crear un fichero loopback, esto es sólo un fichero normal en tu
+sistema de ficheros creado con datos aleatorios. Haga el fichero
+loopback tan grande como quiera que sea su loopback encriptado.
+</p>
+
+<p>
+Lo siguiente crea un fichero de 100 megas con datos aleatorios en
+/home/secret:
+</p>
+
+<pre>
+# dd if=/dev/urandom of=/home/secret bs=1M count=100
+</pre>
+
+<p>
+Ponga este fichero como un dispositivo loopback:
+</p>
+
+<pre>
+# losetup /dev/loop0 /home/secret
+</pre>
+
+<p>
+<em>Encriptar el loopback</em>
+</p>
+
+<p>
+Debe seguir tres pasos para encriptar su fichero loopback:
+</p>
+
+<ul>
+	<li>ejecute cryptsetup en el fichero loopback, esto crea un dispositivo device mapper con el target 'crypt'.</li>
+	<li>cree el sistema de ficheros en su nuevo dispositivo</li>
+	<li>monte su nuevo dispositivo</li>
+</ul>
+
+<p>
+En nuestro ejemplo convertiremos el fichero /home/secret en el
+dispositivo encriptado /dev/mapper/mycrypt (la etiqueta es 'mycrypt')
+y luego lo montaremos en /mnt/sekret:
+</p>
+
+<p>
+cree el volumen lógico (con el binario cryptsetup):
+</p>
+
+<pre>
+# cryptsetup -y create mycrypt /dev/loop0
+</pre>
+
+<p>
+confirme que ha funcionado:
+</p>
+
+<pre>
+# dmsetup ls
+mycrypt (254, 0)
+</pre>
+
+<p>
+cree el sistema de ficheros:
+</p>
+
+<pre>
+# mkfs.ext3 /dev/mapper/mycrypt
+</pre>
+
+<p>
+monte el sistema de ficheros:
+</p>
+
+<pre>
+# mount /dev/mapper/mcrypt /mnt/sekret
+</pre>
+
+<p>
+puede añadir algo como lo siguiente a su /etc/fstab:
+</p>
+
+<pre>
+/dev/mapper/mcrypt	/mnt/sekret	ext3	noauto,noatime	0  0
+</pre>
+
+<p>
+Cuando termine de su usar su loopback encriptado es necesario que lo
+desmonte y elimine el dispositivo creado en devicemapper, si no hace
+esto, cualquiera podrá volver a montarlo sin teclear la contraseña!
+</p>
+
+<pre>
+# umount /mnt/sekret
+# cryptsetup remove mycrypt
+</pre>
+
+<p>
+Cree un script para iniciarlo y montarlo mas fácilmente:
+</p>
+
+<pre>
+#!/bin/sh
+
+losetup /dev/loop0 /home/secret
+cryptsetup create mycrypt /dev/loop0
+mount /dev/mapper/mycrypt /mnt/sekret
+</pre>
+
+<h3>Lvm2 sobre dmcrypt</h3>
+
+<p>
+Por defecto lvm2 no considera los dispositivos de bloques
+device-mapper (como un dispositivo dm-crypt) para ser usados como
+volúmenes físicos.
+</p>
+
+<p>
+Para usar un dispositivo dm-crypt como un lvm2 pv, añada esta linea a
+los dispositivos de bloques en /etc/lvm/lvm.conf:
+</p>
+
+<pre>
+types = [ "device-mapper", 16]
+</pre>
+
+<p>
+Si /etc/lvm/lvm2.conf no existe, puede crear uno basado en su
+configuracion o la configuración por defecto con:
+</p>
+
+<pre>
+# lvm dumpconfig &gt; /etc/lvm/lvm.conf
+</pre>
+
+    </div>
+
+    <div id="sidebar">
+      <h3>Acerca de...</h3>
+      <p><a href="../../../"><img src="../../../static-files/gravatar.jpg" width="40" height="40" alt="avatar" class="float-left"></a>
+	Pequeño blog con artículos técnicos sobre sistemas y software libre de las cosas que voy haciendo. Así como traducciones
+	de artículos que me han sido útiles.
+      </p>
+
+      <!--
+      <h3>Search</h3>
+      <form id="qsearch" action="../../../" method="get" >
+      <p>
+      <label for="qsearch">Search:</label>
+      <input class="tbox" type="text" name="qsearch" value="Search this site..." title="Start typing and hit ENTER">
+      <input class="btn" alt="Search" type="image" name="searchsubmit" title="Search" src="../../../images/search.gif">
+      </p>
+      </form>
+      -->
+
+      <h3>Categorías</h3>
+      <ul class="sidemenu">
+<li><a href="../../../tags/bsd">bsd (2)</a></li>
+<li><a href="../../../tags/debian">debian (17)</a></li>
+<li><a href="../../../tags/dispositivo">dispositivo (1)</a></li>
+<li><a href="../../../tags/loop">loop (1)</a></li>
+<li><a href="../../../tags/mail">mail (2)</a></li>
+<li><a href="../../../tags/monitorizacion">monitorizacion (3)</a></li>
+<li><a href="../../../tags/montar">montar (1)</a></li>
+<li><a href="../../../tags/servidor">servidor (10)</a></li>
+<li><a href="../../../tags/ubuntu">ubuntu (1)</a></li>
+<li><a href="../../../tags/url">url (1)</a></li>
+<li><a href="../../../tags/virtualizacion">virtualizacion (1)</a></li>
+<li><a href="../../../tags/volumen">volumen (1)</a></li>
+      </ul>
+
+      <h3>Archivo</h3>
+      <ul class="sidemenu">
+<li><a href="../../../2012/01">Enero 2012 (1)</a></li>
+<li><a href="../../../2011/01">Enero 2011 (1)</a></li>
+<li><a href="../../../2010/07">Julio 2010 (1)</a></li>
+<li><a href="../../../2009/11">Noviembre 2009 (1)</a></li>
+<li><a href="../../../2009/05">Mayo 2009 (1)</a></li>
+<li><a href="../../../2008/12">Diciembre 2008 (1)</a></li>
+<li><a href="../../../2008/05">Mayo 2008 (2)</a></li>
+<li><a href="../../../2007/07">Julio 2007 (2)</a></li>
+<li><a href="../../../2007/05">Mayo 2007 (1)</a></li>
+<li><a href="../../../2007/03">Marzo 2007 (1)</a></li>
+<li><a href="../../../2007/01">Enero 2007 (1)</a></li>
+<li><a href="../../../2006/12">Diciembre 2006 (1)</a></li>
+<li><a href="../../../2006/11">Noviembre 2006 (1)</a></li>
+<li><a href="../../../2006/09">Septiembre 2006 (1)</a></li>
+<li><a href="../../../2006/08">Agosto 2006 (3)</a></li>
+      </ul>
+
+<!--
+      <h3>Links</h3>
+      <ul class="sidemenu">
+<li><a href="http://blaze.blackened.cz/">BlazeBlogger</a></li>
+<li><a href="http://www.styleshout.com/">Styleshout</a></li>
+      </ul>
+-->
+
+<!--      <h3>Recommended</h3> -->
+      <h3>Enlaces</h3>
+      <ul class="sidemenu">
+<li><a href="http://www.debian.org/">Debian <br><span>El sistema operativo universal</span></a></li>
+<li><a href="http://www.ubuntu.com/">Ubuntu <br><span>Linux for human beings</span></a></li>
+<li><a href="http://www.openbsd.org/">OpenBSD <br><span>Free, functional and secure</span></a></li>
+<li><a href="http://www.linajecontreras.com/">Linaje Contreras <br><span>Genealogía Contreras - Mantenido por mi ama</span></a></li>
+<!--
+<li><a href="http://pidiblog.googlecode.com/">pidiblog <br><span>a minimalistic microblogging system</span></a></li>
+<li><a href="http://www.dxirc.org/">dxirc <br><span>a cross-platform IRC client</span></a></li>
+<li><a href="http://w2do.blackened.cz/">w2do <br><span>a simfople text-based todo manager</span></a></li>
+-->
+      </ul>
+
+      <!-- Remove unused sidebar -->
+      <!--
+      <h3>Wise Words</h3>
+      <p>&quot;We can let circumstances rule us, or we can take
+      charge and rule our lives from within.&quot;</p>
+
+      <p class="align-right">- Earl Nightingale</p>
+      -->
+
+    </div>
+  </div>
+
+  <div id="footer">
+      <p>
+        Copyright &copy; 2019 Angel Abad
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <a href="http://validator.w3.org/check?uri=referer">HTML</a> |
+        <a href="http://jigsaw.w3.org/css-validator/check/referer">CSS</a> 
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        Powered by <a href="http://blaze.blackened.cz/">BlazeBlogger</a>
+      </p>
+  </div>
+</div>
+
+<!-- Google Analytics Code -->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-626322-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<!-- end of Google Analytics Code -->
+
+
+</body>
+
+</html>

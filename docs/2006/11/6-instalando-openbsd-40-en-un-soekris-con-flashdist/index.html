@@ -1,0 +1,393 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+                      "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="txt/html; charset=UTF-8">
+  <meta name="Generator" content="BlazeBlogger 1.2.0">
+  <meta name="Date" content="Mon Jan  7 16:49:48 2019">
+  <link rel="stylesheet" href="../../../pastelero.css" type="text/css">
+  <link rel="alternate" href="../../../index.rss" title="RSS Feed" type="application/rss+xml">
+  <title>Instalando OpenBSD 4.0 en un Soekris con Flashdist</title>
+</head>
+
+<body>
+
+<div id="wrap">
+  <div id="header">
+    <h1 id="logo-text"><a href="../../../">Pastelero.net</a></h1>
+
+    <!-- Remove subtitle -->
+    <!-- <p id="slogan">yet another blog</p> -->
+
+    <div id="top-menu">
+      <p><a href="../../../">Inicio</a> | <a href="../../../index.rss">Feed</a></p>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="main">
+
+<h2 class="post">Instalando OpenBSD 4.0 en un Soekris con Flashdist</h2>
+<div class="information">
+   <span class="date">2006-11-19</span> por <span class="author">Angel Abad</span>, etiquetado como <span class="tags"><a href="../../../tags/bsd">bsd</a></span>
+</div>
+
+<p>
+Manual traducido de: <a
+href="http://www.nmedia.net/%7Echris/soekris/install.html">http://www.nmedia.net/~chris/soekris/install.html</a>
+</p>
+
+<p>
+En este manual se muestra como instalar <a
+href="http://www.openbsd.org">OpenBSD </a>en un <a
+href="http://www.soekris.com/net4501.htm">Soekris NET4501</a> sobre
+una compat flash, en este caso para hacer las funciones de firewall y
+establecer tuneles IPSEC.
+</p>
+
+<!--break-->
+
+<h2>Instalación del NET4501</h2>
+
+<h3>1. Durante el arranque del Soekris (con la flash insertada),
+vera un mensaje similar a este:</h3>
+
+<pre>
+0064 Mbyte Memory                   CPU 80486 133 MHz
+Pri Mas  ATA_FLASH                  LBA 489-4-32   31 Mbyte
+</pre>
+
+<p>
+En el ejemplo anterior, 489-4-32 representa los Cilindros,
+PistarPorCilindro(Cabezas) y SectoresPorPista, los valores C-H-S.
+</p>
+
+<p>
+Conecte su consola serie a la caja del Soekris (19200
+baud). Introduzca la tarjeta flash en el Soekris, enciendalo, y anote
+los valores C-H-S de su sesión serie. Recuerdelos ya que Flashdist le
+preguntará por ellos más adelante.
+</p>
+
+<p>
+(Si su Soekris no muestra esos valores, siga las instrucciones de la
+web de Soekris para actualizar de la 1.15 a una BIOS más moderna)
+</p>
+
+<h3>2. Desempaquete base4X.tgz y etc4X.tgz en un directorio, por ejemplo, /tmp/openbsd.</h3>
+
+(Asegúrese de utilizar la opción <strong>p</strong> con tar o los ficheros no serán extraídos con los permisos adecuados y su instalación (<em>al menos sshd y login</em>) no funcionará correctamente!).
+
+(De forma alternativa, si está ejecutando flashdist en un OpenBSD/i386 y quiere evitar este paso, puede especificar / en vez de /tmp/openbsd en el argumento número 4 para instalar el contenido de flashsmall.txt desde sus sistema operativo actual. Esto ahorra tiempo, pero copia el estado actual de /etc, incluyendo master.passwd y otros ficheros de configuración, así que deberá editarlos.)
+
+<pre>
+mkdir /tmp/openbsd
+cd /tmp/openbsd
+tar xzpf /path/to/base40.tgz
+tar xzpf /path/to/etc40.tgz
+</pre>
+
+<h3>3. Compile el kernel del NET4501</h3>
+
+<pre>
+cp /path/to/NET4501 /usr/src/sys/arch/i386/conf/NET4501
+cd /usr/src/sys/arch/i386/conf
+config NET4501
+cd ../compile/NET4501
+make
+</pre>
+
+<p>
+Por supuesto, que cualquier kernel que compile debe estar construido
+con la misma versión de código fuente que está instalando en el
+Soekris. O en caso de que esté usando un snapshot para instalar desde
+el, intente construir las últimas fuentes cerradas.
+</p>
+
+<h3>4. Edite el fichero rc en el directorio de flashdist para añadir
+sus opciones.</h3> 
+
+<p>
+(Deberá cambiar por lo menos las direcciones IP, la puerta de enlace, el hostname, etc...)
+</p>
+
+<pre>
+tar xvf flashdist.tar
+cd flashdist
+vi rc
+</pre>
+
+<h3>5. Use flashdist para instalar en su tarjeta flash</h3>
+
+<p>(se asume que está utilizando un adaptador USB-CF con una flash en
+sd2). Asegúrese de ejecutar flashdist.sh desde el directorio
+flashdist, ya que sino podría acceder a otros ficheros.
+</p>
+
+<pre>
+./flashdist.sh sd2 flashsmall.txt /usr/src/sys/arch/i386/compile/NET4501/bsd /tmp/openbsd
+</pre>
+
+<p>
+O, si quiere instalar todo (/etc, /usr) desde su estación de trabajo.
+</p>
+
+<pre>
+./flashdist.sh sd2 flashsmall.txt /bsd /
+</pre>
+
+<h3>6. Edite /etc/rc y configure sus parámetros de red (ips, rutas,
+etc)</h3>.
+
+<p>
+Active ntpd si quiere usarlo (recomendado). Active dhcpd si lo
+necesita. Edite ntpd.conf, dhcpd.conf, pf.conf, etc... Si está usando
+nsh puede configurar las rutas y las interfaces directamente dentro de
+nshrc o a través del CLI nsh.
+</p>
+
+<p>
+Ya debería tener una flash arrancable para su NET4501. Si tiene
+problemas arrancando, quizás necesite seguir las instrucciones del
+inicio del script para obtener la geometría correcta.
+</p>
+
+<h2>Modificando la flash después de arrancar</h2>
+
+<p>
+Cuando esté logueado la consola serie del net 4501, puede usar vi y
+otras aplicaciones para configurar su tipo de terminal, como por
+ejemplo:
+</p>
+
+<pre>
+export TERM=vt220
+</pre>
+
+<p>
+Si quiere hacer cambios en el dispositivo de solo lectura mientras
+esta logueado en el, haga lo siguiente:
+</p>
+
+<pre>
+mount -o rw,noatime /dev/wd0a /
+</pre>
+
+<p>
+Haga sus cambios, y después vuelva a montarlo en modo sólo lectura:
+</p>
+
+<pre>
+mount -o ro /dev/wd0a /
+</pre>
+
+<h2>Creando una imagen de disco virtual con flashdist</h2>
+
+<p>
+Si quiere utilizar flashdist para crear una imagen de disco, en vez de
+trabajar sobre la flash, use vnconfig(8). <em>Este método solo
+funciona si especifica la geometría a flashdist
+manualmente</em>. Primero necesita crear una imagen del tamaño de la
+flash:
+</p>
+
+<pre>
+dd if=/dev/zero of=flashimg bs=512 count=125440
+</pre>
+
+<p>
+Donde <em>bs</em>, el blocksize, es igual a los bytes por sector
+usados en la flash (casi siempre 512), y <em>count</em> es el número
+total de sectores. En este ejemplo, el número total de sectores es
+125440, pero por supuesto, es diferente para cada tipo de flash o
+disco duro. Se calcula con C*H*S, donde C es Cilindros, H es Cabezas
+(pistas por cilindro), y S son Sectores por pista.
+</p>
+
+<p>
+Una vez tenga la imagen de disco, necesita que se comporte como un
+disco normal.
+</p>
+
+<pre>
+vnconfig -c svnd0 flashimg
+</pre>
+
+<p>
+Ahora puede usar el dispositivo svnd0 con flashdist, en vez de sd0 u
+otro disco del sistema. Cuando esté preparado para instalarlo en la
+flash, necesita desconfigurarla antes de usarla.
+</p>
+
+<pre>
+vnconfig -u svnd0
+</pre>
+
+<p>
+Ahora el fichero 'flashimg' es tu imagen de disco y está preparada
+para ser escrita en la flash.
+</p>
+
+<pre>
+dd if=flashimg of=/dev/sd0c
+</pre>
+
+<h2>Instalando NSH</strong></h2>
+
+<p>
+NSH puede ser instalado fácilmente. Simplemente desempaquete nsh bajo
+el directorio de flashdist.
+</p>
+
+<pre>
+cd flashdist-XXXXXXXX
+tar xvf ~/nsh-XXXXXXXX.tar
+</pre>
+
+<p>
+Ahora, construya NSH.
+</p>
+
+<pre>
+cd nsh
+make
+</pre>
+
+<p>
+Con NSH compilado, flashdist lo instalará automáticamente.
+</p>
+
+<h3>Enlaces</h3>
+<ul>
+	<li><a href="http://www.nmedia.net/~chris/soekris/">Flashdist</a></li>
+	<li><a href="http://www.soekris.com/">Soekris</a></li>
+	<li><a href="http://www.soekris.com/net4501.htm">Soekris NET4501</a></li>
+	<li><a href="http://www.nmedia.net/~chris/nsh/">NSH</a></li>
+	<li><a href="http://www.openbsd.org">OpenBSD</a></li>
+</ul>
+
+    </div>
+
+    <div id="sidebar">
+      <h3>Acerca de...</h3>
+      <p><a href="../../../"><img src="../../../static-files/gravatar.jpg" width="40" height="40" alt="avatar" class="float-left"></a>
+	Pequeño blog con artículos técnicos sobre sistemas y software libre de las cosas que voy haciendo. Así como traducciones
+	de artículos que me han sido útiles.
+      </p>
+
+      <!--
+      <h3>Search</h3>
+      <form id="qsearch" action="../../../" method="get" >
+      <p>
+      <label for="qsearch">Search:</label>
+      <input class="tbox" type="text" name="qsearch" value="Search this site..." title="Start typing and hit ENTER">
+      <input class="btn" alt="Search" type="image" name="searchsubmit" title="Search" src="../../../images/search.gif">
+      </p>
+      </form>
+      -->
+
+      <h3>Categorías</h3>
+      <ul class="sidemenu">
+<li><a href="../../../tags/bsd">bsd (2)</a></li>
+<li><a href="../../../tags/debian">debian (17)</a></li>
+<li><a href="../../../tags/dispositivo">dispositivo (1)</a></li>
+<li><a href="../../../tags/loop">loop (1)</a></li>
+<li><a href="../../../tags/mail">mail (2)</a></li>
+<li><a href="../../../tags/monitorizacion">monitorizacion (3)</a></li>
+<li><a href="../../../tags/montar">montar (1)</a></li>
+<li><a href="../../../tags/servidor">servidor (10)</a></li>
+<li><a href="../../../tags/ubuntu">ubuntu (1)</a></li>
+<li><a href="../../../tags/url">url (1)</a></li>
+<li><a href="../../../tags/virtualizacion">virtualizacion (1)</a></li>
+<li><a href="../../../tags/volumen">volumen (1)</a></li>
+      </ul>
+
+      <h3>Archivo</h3>
+      <ul class="sidemenu">
+<li><a href="../../../2012/01">Enero 2012 (1)</a></li>
+<li><a href="../../../2011/01">Enero 2011 (1)</a></li>
+<li><a href="../../../2010/07">Julio 2010 (1)</a></li>
+<li><a href="../../../2009/11">Noviembre 2009 (1)</a></li>
+<li><a href="../../../2009/05">Mayo 2009 (1)</a></li>
+<li><a href="../../../2008/12">Diciembre 2008 (1)</a></li>
+<li><a href="../../../2008/05">Mayo 2008 (2)</a></li>
+<li><a href="../../../2007/07">Julio 2007 (2)</a></li>
+<li><a href="../../../2007/05">Mayo 2007 (1)</a></li>
+<li><a href="../../../2007/03">Marzo 2007 (1)</a></li>
+<li><a href="../../../2007/01">Enero 2007 (1)</a></li>
+<li><a href="../../../2006/12">Diciembre 2006 (1)</a></li>
+<li><a href="../../../2006/11">Noviembre 2006 (1)</a></li>
+<li><a href="../../../2006/09">Septiembre 2006 (1)</a></li>
+<li><a href="../../../2006/08">Agosto 2006 (3)</a></li>
+      </ul>
+
+<!--
+      <h3>Links</h3>
+      <ul class="sidemenu">
+<li><a href="http://blaze.blackened.cz/">BlazeBlogger</a></li>
+<li><a href="http://www.styleshout.com/">Styleshout</a></li>
+      </ul>
+-->
+
+<!--      <h3>Recommended</h3> -->
+      <h3>Enlaces</h3>
+      <ul class="sidemenu">
+<li><a href="http://www.debian.org/">Debian <br><span>El sistema operativo universal</span></a></li>
+<li><a href="http://www.ubuntu.com/">Ubuntu <br><span>Linux for human beings</span></a></li>
+<li><a href="http://www.openbsd.org/">OpenBSD <br><span>Free, functional and secure</span></a></li>
+<li><a href="http://www.linajecontreras.com/">Linaje Contreras <br><span>Genealogía Contreras - Mantenido por mi ama</span></a></li>
+<!--
+<li><a href="http://pidiblog.googlecode.com/">pidiblog <br><span>a minimalistic microblogging system</span></a></li>
+<li><a href="http://www.dxirc.org/">dxirc <br><span>a cross-platform IRC client</span></a></li>
+<li><a href="http://w2do.blackened.cz/">w2do <br><span>a simfople text-based todo manager</span></a></li>
+-->
+      </ul>
+
+      <!-- Remove unused sidebar -->
+      <!--
+      <h3>Wise Words</h3>
+      <p>&quot;We can let circumstances rule us, or we can take
+      charge and rule our lives from within.&quot;</p>
+
+      <p class="align-right">- Earl Nightingale</p>
+      -->
+
+    </div>
+  </div>
+
+  <div id="footer">
+      <p>
+        Copyright &copy; 2019 Angel Abad
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <a href="http://validator.w3.org/check?uri=referer">HTML</a> |
+        <a href="http://jigsaw.w3.org/css-validator/check/referer">CSS</a> 
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        Powered by <a href="http://blaze.blackened.cz/">BlazeBlogger</a>
+      </p>
+  </div>
+</div>
+
+<!-- Google Analytics Code -->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-626322-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<!-- end of Google Analytics Code -->
+
+
+</body>
+
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+                      "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="txt/html; charset=UTF-8">
+  <meta name="Generator" content="BlazeBlogger 1.2.0">
+  <meta name="Date" content="Mon Jan  7 16:49:48 2019">
+  <link rel="stylesheet" href="../../../pastelero.css" type="text/css">
+  <link rel="alternate" href="../../../index.rss" title="RSS Feed" type="application/rss+xml">
+  <title>1/2: Introducción al uso de Puppet</title>
+</head>
+
+<body>
+
+<div id="wrap">
+  <div id="header">
+    <h1 id="logo-text"><a href="../../../">Pastelero.net</a></h1>
+
+    <!-- Remove subtitle -->
+    <!-- <p id="slogan">yet another blog</p> -->
+
+    <div id="top-menu">
+      <p><a href="../../../">Inicio</a> | <a href="../../../index.rss">Feed</a></p>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="main">
+
+<h2 class="post">1/2: Introducción al uso de Puppet</h2>
+<div class="information">
+   <span class="date">2007-07-08</span> por <span class="author">Angel Abad</span>, etiquetado como <span class="tags"><a href="../../../tags/debian">debian</a>, <a href="../../../tags/monitorizacion">monitorizacion</a>, <a href="../../../tags/servidor">servidor</a></span>
+</div>
+
+<p>
+Artículo traducido de: <a
+href="http://www.debian-administration.org/articles/526">http://www.debian-administration.org/articles/526</a> 
+</p>
+
+<p>
+Puppet es un sistema relativamente nuevo para la configuración y el
+mantenimiento de grandes redes de maquinas. Es similar a CFEngine,
+pero escrito en Ruby. En esta introduccion al trabajo con Puppet
+veremos como instalarlo, y ponerlo a funcionar en una pequeña LAN.
+</p>
+
+<!--break-->
+
+<p>
+En este artículo veremos la instalción del servidor central puppet
+sobre un ordenador así como la configuración de algunos nodos que
+serán controlados a través de él. Para referenciar a las máquinas las
+veremos de la siguiente manera:
+</p>
+
+<ul>
+	<li><strong>vain.my.flat</strong>: Este es el servidor Puppet responsable de la configuración de cada una de las otras máquinas.</li>
+	<li><strong>yours.my.flat</strong>: Un cliente simple.</li>
+	<li><strong>etch-builder.my.flat</strong>: Un cliente simple.</li>
+</ul>
+
+<p>
+<strong>Nota</strong>: Para que el cliente y el servidor puppet puedan
+comunicarse asegurese que el puerto 8140 está abierto entre los dos
+sistemas. Si está usando un firewall le recomiendo que el cliente sólo
+acepte conexiones desde el servidor a través de este puerto.
+</p>
+
+<h3>Instalación del servidor</h3>
+
+<p>
+La instalación del servidor es tan simple como:
+</p>
+
+<pre>
+root@vain:~# apt-get install puppetmaster
+</pre>
+
+<p>
+Esto instalará el servidor, pero fallará al iniciarse porque no
+tenemos el manifest instalado. Esto no es importante de momento.
+</p>
+
+<p>
+Cuando queramos usar el servidor realmente, querremos que:
+</p>
+
+<ul>
+	<li>Sirva ficheros que puedan ser copiados en los clientes.</li>
+	<li>Tener una lista de acciones y clientes en donde aplicarlas.</li>
+</ul>
+
+<p>
+Por defecto el servidor de ficheros está desactivado, asi que
+necesitamos arreglar esto actualizando el fichero
+<em>/etc/puppet/fileserver.conf</em>. En mi caso quiero servir
+ficheros a la red 192.168.1.x, así que actualizaré este fichero para
+que contenga:
+</p>
+
+<pre>
+[files]
+  path /etc/puppet/files
+  allow 192.168.1.0/24
+</pre>
+
+<p>
+Esto significa que cualquier ordenador de la red 192.168.1.0/24 puede
+pedir ficheros situados en /etc/puppet/files en el servidor.
+</p>
+
+<p>
+El siguiente paso es crear el esqueleto del fichero manifest:
+</p>
+
+<pre>
+root@vain:~# mkdir -p /etc/puppet/manifests/
+</pre>
+
+<p>
+El fichero que busca puppet es site.pp, así que crearemos el fichero
+con el siguiente contenido:
+</p>
+
+<pre>
+# fixup permissions on sudo
+class sudo {
+    file { "/etc/sudoers":
+        owner =&gt; root,
+        group =&gt; root,
+        mode =&gt; 440,
+    }
+}
+
+node default {
+     include sudo
+}
+</pre>
+
+<p>
+(Volveremos a este archivo en la segunda parte de nuestro artículo,
+donde explicaremos como controlar tus clientes usando puppet. Por el
+momento sólo nos aseguraremos de que el fichero
+<em>/etc/puppet/manifests/site.pp</em> es correcto y de que
+/etc/sudoers existe con los permisos correctos.)
+</p>
+
+<h3>Instalación del cliente</h3>
+
+<p>
+El siguiente trabajo es instalar el cliente puppet en cada ordenador
+que quieres que sea controlado. Para instalarlo ejecuta:
+</p>
+
+<pre>
+root@vain:~# apt-get install puppet
+</pre>
+
+<p>
+Una vez se haya instalado necesitarás configurar el cliente con el
+nombre de tu servidor maestro. Por defecto el cliente intentará buscar
+el nombre de host puppet y conectarse a él.
+</p>
+
+<p>
+En mi caso controlo el DNS así que sólo debo poner el nombre
+puppet.my.flat como alias al servidor real vain.my.flat, pero
+explicaré como cambiar el nombre manualmente.
+</p>
+
+<p>
+Actualiza el fichero <em>/etc/puppet/puppetd.conf</em> para que quede
+similar a lo siguiente:
+</p>
+
+<pre>
+[puppetd]
+server = vain.my.flat
+logdir = /var/log/puppet
+vardir = /var/lib/puppet
+rundir = /var/run
+</pre>
+
+<p>
+Una vez esté esto cambiado debes reiniciar el cliente:
+</p>
+
+<pre>
+root@etch-builder:~# /etc/init.d/puppet restart
+Restarting puppet configuration management tool.
+root@etch-builder:~#
+</pre>
+
+<h3>Intercambio de claves</h3>
+
+<p>
+El sistema puppet utiliza una pequeña autoridad certificadora para
+proteger la comunicación en la red y el control de acceso al
+servidor.
+</p>
+
+<p>
+De momento sólo hemos instalado un servidor con un archivo manifest
+simple y un cliente que conoce el nombre del servidor. Así que todavía
+no hemos configurado la autentificación.
+</p>
+
+<p>
+Tenemos un servidor escuchando a la espera de conexiones y un cliente
+que sabe donde pedir acciones. Pero nada pasrá porque el cliente no
+está autorizado a contactar con el servidor.
+</p>
+
+<p>
+Vamos a arreglar esto.
+</p>
+
+<p>
+En el servidor ejecutaremos el siguiente comando para ver que
+peticiones han sido recibidas y no son autorizadas:
+</p>
+
+<pre>
+root@vain:~# puppetca  --list
+yours.my.flat
+etch-builder.my.flat
+</pre>
+
+<p>
+Para autorizar estas peticiones deberemos ejecutar:
+</p>
+
+<pre>
+root@vain:~# puppetca  --sign yours.my.flat
+Signed yours.my.flat
+root@vain:~# puppetca  --sign etch-builder.my.flat
+Signed etch-builder.my.flat
+</pre>
+
+<p>
+Ahora todo está atado. El servidor aceptará conexiones de nuestros dos
+nodos, y estos se podrán conectar y ejecutar el contenido del fichero
+<em>site.pp</em>. Si este fichero cambia en el servidor los clientes
+serán notificados cada 30 minutos y se actualizarán.
+</p>
+
+<p>
+Esto acaba con el proceso de instalación y configuración del servidor
+y cliente puppet. En el siguiente artículo explicaremos lo siguiente:
+</p>
+
+<ul>
+	<li> Hacer puppet mas parecido a CFEngine.</li>
+	<li> Empezar a usar puppet para controlar tus clientes de una forma útil.</li>
+</ul>
+    </div>
+
+    <div id="sidebar">
+      <h3>Acerca de...</h3>
+      <p><a href="../../../"><img src="../../../static-files/gravatar.jpg" width="40" height="40" alt="avatar" class="float-left"></a>
+	Pequeño blog con artículos técnicos sobre sistemas y software libre de las cosas que voy haciendo. Así como traducciones
+	de artículos que me han sido útiles.
+      </p>
+
+      <!--
+      <h3>Search</h3>
+      <form id="qsearch" action="../../../" method="get" >
+      <p>
+      <label for="qsearch">Search:</label>
+      <input class="tbox" type="text" name="qsearch" value="Search this site..." title="Start typing and hit ENTER">
+      <input class="btn" alt="Search" type="image" name="searchsubmit" title="Search" src="../../../images/search.gif">
+      </p>
+      </form>
+      -->
+
+      <h3>Categorías</h3>
+      <ul class="sidemenu">
+<li><a href="../../../tags/bsd">bsd (2)</a></li>
+<li><a href="../../../tags/debian">debian (17)</a></li>
+<li><a href="../../../tags/dispositivo">dispositivo (1)</a></li>
+<li><a href="../../../tags/loop">loop (1)</a></li>
+<li><a href="../../../tags/mail">mail (2)</a></li>
+<li><a href="../../../tags/monitorizacion">monitorizacion (3)</a></li>
+<li><a href="../../../tags/montar">montar (1)</a></li>
+<li><a href="../../../tags/servidor">servidor (10)</a></li>
+<li><a href="../../../tags/ubuntu">ubuntu (1)</a></li>
+<li><a href="../../../tags/url">url (1)</a></li>
+<li><a href="../../../tags/virtualizacion">virtualizacion (1)</a></li>
+<li><a href="../../../tags/volumen">volumen (1)</a></li>
+      </ul>
+
+      <h3>Archivo</h3>
+      <ul class="sidemenu">
+<li><a href="../../../2012/01">Enero 2012 (1)</a></li>
+<li><a href="../../../2011/01">Enero 2011 (1)</a></li>
+<li><a href="../../../2010/07">Julio 2010 (1)</a></li>
+<li><a href="../../../2009/11">Noviembre 2009 (1)</a></li>
+<li><a href="../../../2009/05">Mayo 2009 (1)</a></li>
+<li><a href="../../../2008/12">Diciembre 2008 (1)</a></li>
+<li><a href="../../../2008/05">Mayo 2008 (2)</a></li>
+<li><a href="../../../2007/07">Julio 2007 (2)</a></li>
+<li><a href="../../../2007/05">Mayo 2007 (1)</a></li>
+<li><a href="../../../2007/03">Marzo 2007 (1)</a></li>
+<li><a href="../../../2007/01">Enero 2007 (1)</a></li>
+<li><a href="../../../2006/12">Diciembre 2006 (1)</a></li>
+<li><a href="../../../2006/11">Noviembre 2006 (1)</a></li>
+<li><a href="../../../2006/09">Septiembre 2006 (1)</a></li>
+<li><a href="../../../2006/08">Agosto 2006 (3)</a></li>
+      </ul>
+
+<!--
+      <h3>Links</h3>
+      <ul class="sidemenu">
+<li><a href="http://blaze.blackened.cz/">BlazeBlogger</a></li>
+<li><a href="http://www.styleshout.com/">Styleshout</a></li>
+      </ul>
+-->
+
+<!--      <h3>Recommended</h3> -->
+      <h3>Enlaces</h3>
+      <ul class="sidemenu">
+<li><a href="http://www.debian.org/">Debian <br><span>El sistema operativo universal</span></a></li>
+<li><a href="http://www.ubuntu.com/">Ubuntu <br><span>Linux for human beings</span></a></li>
+<li><a href="http://www.openbsd.org/">OpenBSD <br><span>Free, functional and secure</span></a></li>
+<li><a href="http://www.linajecontreras.com/">Linaje Contreras <br><span>Genealogía Contreras - Mantenido por mi ama</span></a></li>
+<!--
+<li><a href="http://pidiblog.googlecode.com/">pidiblog <br><span>a minimalistic microblogging system</span></a></li>
+<li><a href="http://www.dxirc.org/">dxirc <br><span>a cross-platform IRC client</span></a></li>
+<li><a href="http://w2do.blackened.cz/">w2do <br><span>a simfople text-based todo manager</span></a></li>
+-->
+      </ul>
+
+      <!-- Remove unused sidebar -->
+      <!--
+      <h3>Wise Words</h3>
+      <p>&quot;We can let circumstances rule us, or we can take
+      charge and rule our lives from within.&quot;</p>
+
+      <p class="align-right">- Earl Nightingale</p>
+      -->
+
+    </div>
+  </div>
+
+  <div id="footer">
+      <p>
+        Copyright &copy; 2019 Angel Abad
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        <a href="http://validator.w3.org/check?uri=referer">HTML</a> |
+        <a href="http://jigsaw.w3.org/css-validator/check/referer">CSS</a> 
+
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+        Powered by <a href="http://blaze.blackened.cz/">BlazeBlogger</a>
+      </p>
+  </div>
+</div>
+
+<!-- Google Analytics Code -->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-626322-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+<!-- end of Google Analytics Code -->
+
+
+</body>
+
+</html>
